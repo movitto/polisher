@@ -1,0 +1,10 @@
+development:
+  gem_api_key:       "YOUR_GEMCUTTER_KEY_HERE"
+  smtp_server:       "localhost"
+  email_from:        "user@host.com"
+  email_to:          "user@host.com"
+  bugzilla_post_url: "https://bugzilla.redhat.com/post_bug.cgi"
+
+test:
+
+production:

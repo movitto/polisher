@@ -1,0 +1,68 @@
+a{
+  text-decoration: none;
+  font-size: 85%;
+  color: gray;
+}
+
+form{
+  padding-top: 5px;
+}
+
+form td{
+  width: 150px;;
+}
+
+#header {
+  width:  850px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 0px;
+  padding-bottom: 70px;
+  border-bottom: 1px solid black;
+}
+
+#header h3{
+  width: 30%;
+  float: left;
+  padding-top: 15px;
+}
+
+#header ul{
+  float: right;
+}
+
+#header ul li{
+  float: left;
+  display: block;
+  padding-left: 15px;
+}
+
+#main {
+  width:  850px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 10px;
+}
+
+#main h4,
+#main h5,
+#main h6{
+ display: inline;
+}
+
+#main h6{
+  padding-left: 15px;
+}
+
+#main ul li{
+  list-style: none;
+  padding-top: 15px;
+}
+
+#main ul li:before {
+  content: "\00BB \0020";
+}
+
+#main ul li ul li{
+  padding-top: 5px;
+}
