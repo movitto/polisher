@@ -14,7 +14,7 @@ env ||= 'development'
 logger = Logger.new(STDOUT)
 
 GEM_NAME='polisher'
-PKG_VERSION='0.2'
+PKG_VERSION='0.3'
 
 namespace :db do
   task :migrate do
@@ -80,7 +80,7 @@ SPEC = Gem::Specification.new do |s|
 
     s.author = "Mohammed Morsi"
     s.email = "mmorsi@redhat.com"
-    s.date = %q{2010-01-13}
+    s.date = %q{2010-03-11}
     s.description = "Ruby gem polisher"
     s.summary = "Ruby gem polisher"
     s.homepage = "http://github.com/movitto/polisher"
