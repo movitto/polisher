@@ -1,10 +1,20 @@
 development:
-  gem_api_key:       "YOUR_GEMCUTTER_KEY_HERE"
-  smtp_server:       "localhost"
-  email_from:        "user@host.com"
-  email_to:          "user@host.com"
-  bugzilla_post_url: "https://bugzilla.redhat.com/post_bug.cgi"
+  gem_api_key:       "YOUR GEMCUTTER API KEY HERE"
+  email_from:        "foo@example.host"
+  email_server:      "localhost"
+  email_subject:     "gem #{gem_name} updated"
+  email_body:        "gem #{gem_name} updated"
 
 test:
+  gem_api_key:       "YOUR GEMCUTTER API KEY HERE"
+  email_from:        "mmorsi@redhat.com"
+  email_server:      "localhost"
+  email_subject:     "gem #{gem_name} updated"
+  email_body:        "gem #{gem_name} updated"
 
 production:
+  gem_api_key:       "YOUR GEMCUTTER API KEY HERE"
+  email_from:        "foo@example.host"
+  email_server:      "localhost"
+  email_subject:     "gem #{gem_name} updated"
+  email_body:        "gem #{gem_name} updated"

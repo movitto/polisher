@@ -1,0 +1,41 @@
+%h4
+  Sources
+
+%ul
+  - @sources.sort { |x,y| x.name <=> y.name }.each do |source|
+    %li
+      %h5
+      = source.name
+      %a{:href => url_for("/sources/destroy/#{source.id}"), :class => 'delete_source_link'}
+        (delete)
+
+%h4
+  New Source
+
+%form{:method => "post", :action => url_for("/sources/create")}
+  %table
+    %tr
+      %td
+        Name:
+      %td
+        %input{:type => "text", :id => "name", :name => "name"}
+
+    %tr
+      %td
+        URI:
+      %td
+        %input{:type => "text", :id => "uri", :name => "uri"}
+
+    %tr
+      %td
+        %input{:type => "submit", :value => "submit"}
+
+%script{:type => "text/javascript"}
+  :plain
+    $('.delete_source_link').bind('click', function(e){
+       c = confirm("delete source?")
+       if(c){
+         delete_request(this.href, function(result) { reload(); });
+       }
+       return false;
+    });

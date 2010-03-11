@@ -1,0 +1,106 @@
+%h4
+  Gems
+
+%ul
+  - @gems.sort { |x,y| x.name <=> y.name }.each do |gem|
+    %li
+      %h5
+      = gem.name
+      %a{:href => url_for("/gems/destroy/#{gem.id}"), :class => 'delete_gem_link'}
+        (delete)
+      %br/
+      %h6
+        events
+      %ul
+        - gem.events.each do |event|
+          %li
+            = event.process.humanize
+            = (event.gem_version != "" ? " on version #{event.version_qualifier} #{event.gem_version}" : "")
+            = (event.process_options != "" ? " with options #{event.process_options}" : "")
+            %a{:href => url_for("/events/destroy/#{event.id}"), :class => 'delete_event_link'}
+              (delete)
+  
+%h4
+  New Gem
+
+%form{:method => "post", :action => url_for("/gems/create")}
+  %table
+    %tr
+      %td
+        Select Source:
+      %td
+        %select{:id => "source_id", :name => "source_id"}
+          - @sources.each do |source|
+            %option{:id => source.id, :value => source.id}
+              = source.name
+    %tr
+      %td
+        Name:
+      %td
+        %input{:type => "text", :id => "name", :name => "name"}
+
+    %tr
+      %td
+        %input{:type => "submit", :value => "submit"}
+
+%h4 New Event
+
+%form{:method => "post", :action => url_for("/events/create")}
+  %table
+    %tr
+      %td
+        Select Gem:
+      %td{:colspan => "2"}
+        %select{:id => "managed_gem_id", :name => "managed_gem_id"}
+          - @gems.each do |gem|
+            %option{:id => gem.id, :value => gem.id}
+              = gem.name
+
+    %tr
+      %td
+        Select Process:
+      %td{:colspan => "2"}
+        %select{:id => "process", :name => "process"}
+          - @processes.each do |process|
+            %option{:id => process, :value => process}
+              = process.humanize
+
+    %tr
+      %td
+        Run On Version:
+      %td
+        %select{:id => "version_qualifier", :name => "version_qualifier"}
+          - @version_qualifiers.each do |qualifier|
+            %option{:id => qualifier, :value => qualifier}
+              = qualifier
+
+      %td
+        %input{:type => "text", :id => "gem_version", :name => "gem_version", :value => '*'}
+
+    %tr
+      %td
+        Optional Params:
+      %td{:colspan => "2"}
+        %input{:type => "text", :id => "process_options", :name => "process_options"}
+
+    %tr
+      %td
+        %input{:type => "submit", :value => "submit"}
+
+
+%script{:type => "text/javascript"}
+  :plain
+    $('.delete_gem_link').bind('click', function(e){
+       c = confirm("delete gem?")
+       if(c){
+         delete_request(this.href, function(result) { reload(); });
+       }
+       return false;
+    });
+    $('.delete_event_link').bind('click', function(e){
+       c = confirm("delete event?")
+       if(c){
+         delete_request(this.href, function(result) { reload(); });
+       }
+       return false;
+    });

@@ -6,9 +6,11 @@ a{
 
 form{
   padding-top: 5px;
+  padding-left: 15px;
 }
 
-form td{
+/* set fixed width of first column in form tables */
+form tr > td:first-child{
   width: 150px;;
 }
 
@@ -44,19 +46,28 @@ form td{
   padding-left: 10px;
 }
 
-#main h4,
 #main h5,
 #main h6{
  display: inline;
+}
+
+#main h4{
+  margin-top: 25px;
+  margin-bottom: 0;
 }
 
 #main h6{
   padding-left: 15px;
 }
 
+#main ul{
+  margin-top: 3px;
+  margin-bottom: 3px;
+  padding-left: 20px;
+}
+
 #main ul li{
   list-style: none;
-  padding-top: 15px;
 }
 
 #main ul li:before {
@@ -65,4 +76,8 @@ form td{
 
 #main ul li ul li{
   padding-top: 5px;
+}
+
+#main input#gem_version {
+  width: 125px;
 }

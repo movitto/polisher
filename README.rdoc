@@ -1,0 +1,25 @@
+== Rubygem Polisher
+Copyright (C) 2010 Red Hat, Inc.
+Written by Mohammed Morsi <mmorsi@redhat.com>
+
+=== Intro
+Polisher is a post-publishing processing webapp for rubygems. It allows for
+the configuration of events to be run on target gem/version updates. Polisher
+makes uses of the gemcutter webhook API in conjunction with the sinatra/rack
+web framework to subscribe to gem updates to run any specified/arbitrary event 
+handler callbacks.
+
+=== Running
+Simply 'gem install polisher'
+
+Also checkout the source from github via
+
+'git clone git://github.com/movitto/polisher.git'
+
+To run the spec suite simply run
+
+'rake spec'
+
+
+=== Using
+ See the generated API and specs
