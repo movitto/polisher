@@ -46,20 +46,10 @@ Spec::Rake::SpecTask.new('spec' => ['test_env', 'db:drop_tables', 'db:migrate'])
   t.spec_files = FileList['spec/*_spec.rb']
 end
 
-task :rdoc do
-  desc "Create RDoc documentation"
-  system "rdoc --title 'Polisher documentation' lib/"
-end
-
 Rake::RDocTask.new do |rd|
     rd.main = "README.rdoc"
     rd.rdoc_dir = "doc/site/api"
     rd.rdoc_files.include("README.rdoc", "polisher.rb", "db/**/*.rb", "lib/**/*.rb")
-end
-
-task :create_gem do
-  desc "Create a new gem"
-  system "gem build polisher.gemspec"
 end
 
 PKG_FILES = FileList['bin/*', 'config/*.yml', 'config.ru', 'COPYING', 

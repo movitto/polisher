@@ -1,0 +1,8 @@
+- haml_tag(:sources) do
+  - @sources.each do |source|
+    - haml_tag(:id) do
+      = source.id
+    - haml_tag(:name) do
+      = source.name
+    - haml_tag(:uri) do
+      = source.uri

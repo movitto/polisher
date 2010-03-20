@@ -57,7 +57,7 @@ describe "Polisher::ManagedGem" do
   end
 
   it "should generate correct source uri from gem uri" do
-     ManagedGem.uri_to_source_uri('http://rubygems.org/downloads/polisher-0.1.gem').
+     ManagedGem.uri_to_source_uri('http://rubygems.org/downloads/polisher-0.3.gem').
          should == 'http://rubygems.org'
   end
 
@@ -80,17 +80,17 @@ describe "Polisher::ManagedGem" do
      FileUtils.mkdir_p(ARTIFACTS_DIR)
 
      gem = ManagedGem.new :name => "polisher", :source_id => 1
-     path = gem.download_to(:dir => ARTIFACTS_DIR, :version => 0.1)
-     File.size?(ARTIFACTS_DIR + '/polisher-0.1.gem').should_not be_nil
-     FileUtils.rm(ARTIFACTS_DIR + '/polisher-0.1.gem')
-     path.should == ARTIFACTS_DIR + '/polisher-0.1.gem'
+     path = gem.download_to(:dir => ARTIFACTS_DIR, :version => 0.3)
+     File.size?(ARTIFACTS_DIR + '/polisher-0.3.gem').should_not be_nil
+     FileUtils.rm(ARTIFACTS_DIR + '/polisher-0.3.gem')
+     path.should == ARTIFACTS_DIR + '/polisher-0.3.gem'
 
 
-     gem.download_to(:path => ARTIFACTS_DIR + '/my.gem', :version => 0.1)
+     gem.download_to(:path => ARTIFACTS_DIR + '/my.gem', :version => 0.3)
      File.size?(ARTIFACTS_DIR + '/my.gem').should_not be_nil
 
      gem.download_to(:dir => ARTIFACTS_DIR)
-     File.size?(ARTIFACTS_DIR + '/polisher-0.1.gem').should_not be_nil
+     File.size?(ARTIFACTS_DIR + '/polisher-0.3.gem').should_not be_nil
   end
 
 end

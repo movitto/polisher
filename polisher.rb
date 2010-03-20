@@ -58,6 +58,11 @@ get '/gems' do
   haml :"gems/index"
 end
 
+get '/gems.xml' do
+  @gems      = ManagedGem.find :all
+  haml :"gems/index.xml", :layout => false
+end
+
 post '/gems/create' do
   @gem = ManagedGem.new :name => params[:name], :source_id => params[:source_id]
   @gem.save!
@@ -88,6 +93,11 @@ end
 get '/sources' do
   @sources = Source.find :all
   haml :"sources/index"
+end
+
+get '/sources.xml' do
+  @sources = Source.find :all
+  haml :"sources/index.xml", :layout => false
 end
 
 post '/sources/create' do

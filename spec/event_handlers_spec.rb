@@ -35,11 +35,11 @@ describe "Polisher::EventHandlers" do
 
   it "should correctly create package" do
      create_package(@gem)
-     File.exists?(ARTIFACTS_DIR + '/gems/polisher-0.1.gem').should == true
-     File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.1.gem').should == true
+     File.exists?(ARTIFACTS_DIR + '/gems/polisher-0.3.gem').should == true
+     File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
-     File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.1-1.#{BUILD_VERSION}.src.rpm").should == true
-     File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.1-1.#{BUILD_VERSION}.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.3-1.#{BUILD_VERSION}.src.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
   end
 
   it "should correctly create package using template" do

@@ -1,0 +1,8 @@
+- haml_tag(:gems) do
+  - @gems.each do |gem|
+    - haml_tag(:id) do
+      = gem.id
+    - haml_tag(:name) do
+      = gem.name
+    - haml_tag(:source_id) do
+      = gem.source_id

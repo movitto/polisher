@@ -29,6 +29,18 @@ describe "Polisher" do
     last_response.should be_ok
   end
 
+  it "should get gems in xml format" do
+    post '/gems/create', :name => 'gem-xml-test1', :source_id => 1
+    post '/gems/create', :name => 'gem-xml-test2', :source_id => 1
+    get '/gems.xml'
+    last_response.should be_ok
+
+    expect = "<gems>"
+    ManagedGem.find(:all).each { |g| expect += "<id>#{g.id}</id><name>#{g.name}</name><source_id>#{g.source_id}</source_id>" }
+    expect += "</gems>"
+    last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
+  end
+
   it "should allow gem creations" do
     lambda do
       post '/gems/create', :name => 'create-gem-test', :source_id => 1
@@ -40,8 +52,9 @@ describe "Polisher" do
 
   it "should allow gem deletions" do
     post '/gems/create', :name => 'delete-gem-test', :source_id => 1
+    gem_id = ManagedGem.find(:first, :conditions => ['name = ?', 'delete-gem-test']).id
     lambda do
-      delete '/gems/destroy/2'
+      delete "/gems/destroy/#{gem_id}"
     end.should change(ManagedGem, :count).by(-1)
     follow_redirect!
     last_response.should be_ok
@@ -84,10 +97,24 @@ describe "Polisher" do
     last_request.url.should == "http://example.org/sources"
   end
 
+  it "should get sources in xml format" do
+    post '/sources/create', :name => 'source-xml-test1', :uri => 'http://foo.host'
+    post '/sources/create', :name => 'source-xml-test2', :uri => 'http://bar.host'
+    get '/sources.xml'
+    last_response.should be_ok
+
+    expect = "<sources>"
+    Source.find(:all).each { |s| expect += "<id>#{s.id}</id><name>#{s.name}</name><uri>#{s.uri}</uri>" }
+    expect += "</sources>"
+    last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
+  end
+
+
   it "should allow source deletions" do
     post '/sources/create', :name => 'delete-source-test', :uri => 'http://example2.org'
+    source_id = Source.find(:first, :conditions => ['name = ?', 'delete-source-test']).id
     lambda do
-      delete '/sources/destroy/2'
+      delete "/sources/destroy/#{source_id}"
     end.should change(Source, :count).by(-1)
     follow_redirect!
     last_response.should be_ok
