@@ -29,8 +29,8 @@
       %td
         Select Source:
       %td
-        %select{:id => "source_id", :name => "source_id"}
-          - @sources.each do |source|
+        %select{:id => "gem_source_id", :name => "gem_source_id"}
+          - @gem_sources.each do |source|
             %option{:id => source.id, :value => source.id}
               = source.name
     %tr

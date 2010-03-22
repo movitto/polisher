@@ -15,9 +15,9 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 
-describe "Polisher::Source" do
+describe "Polisher::GemSource" do
    it "should not be valid if name or uri is missing" do
-      src = Source.new :name => 'foo', :uri => 'bar'
+      src = GemSource.new :name => 'foo', :uri => 'bar'
       src.valid?.should be(true)
 
       src.name = nil
@@ -29,7 +29,7 @@ describe "Polisher::Source" do
    end
 
    it "should clean uri properly" do
-      src = Source.new :uri => 'http://example.com/'
+      src = GemSource.new :uri => 'http://example.com/'
       src.clean_uri!
       src.uri.should == 'http://example.com'
    end
@@ -38,31 +38,31 @@ end
 
 
 describe "Polisher::ManagedGem" do
-  it "should not be valid if name or source is missing" do
-      gem = ManagedGem.new :name => 'foo', :source_id => 1
+  it "should not be valid if name or gem source is missing" do
+      gem = ManagedGem.new :name => 'foo', :gem_source_id => 1
       gem.valid?.should be(true)
 
       gem.name = nil
       gem.valid?.should be(false)
       gem.name = 'foo'
 
-      gem.source_id = nil
+      gem.gem_source_id = nil
       gem.valid?.should be(false)
   end
 
-  it "should not be valid if name is not unique within source scope" do
-     gem1 = ManagedGem.create :name => 'foo', :source_id => 1
-     gem2 = ManagedGem.new :name => 'foo', :source_id => 1
+  it "should not be valid if name is not unique within gem source scope" do
+     gem1 = ManagedGem.create :name => 'foo', :gem_source_id => 1
+     gem2 = ManagedGem.new :name => 'foo', :gem_source_id => 1
      gem2.valid?.should be(false)
   end
 
-  it "should generate correct source uri from gem uri" do
+  it "should generate correct gem source uri from gem uri" do
      ManagedGem.uri_to_source_uri('http://rubygems.org/downloads/polisher-0.3.gem').
          should == 'http://rubygems.org'
   end
 
   it "should successfully subscribe/unsubscribe to updates" do
-     gem = ManagedGem.new :name => "polisher", :source_id => 1
+     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
      gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/updated/1"
      gem.subscribed?.should == true
      gem.unsubscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/updated/1"
@@ -70,7 +70,7 @@ describe "Polisher::ManagedGem" do
   end
 
   it "should successfully get remote gem info" do
-     gem = ManagedGem.new :name => "polisher", :source_id => 1
+     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
      info = gem.get_info
      info["name"].should == "polisher"
   end
@@ -79,7 +79,7 @@ describe "Polisher::ManagedGem" do
      FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
      FileUtils.mkdir_p(ARTIFACTS_DIR)
 
-     gem = ManagedGem.new :name => "polisher", :source_id => 1
+     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
      path = gem.download_to(:dir => ARTIFACTS_DIR, :version => 0.3)
      File.size?(ARTIFACTS_DIR + '/polisher-0.3.gem').should_not be_nil
      FileUtils.rm(ARTIFACTS_DIR + '/polisher-0.3.gem')
@@ -98,7 +98,7 @@ end
 describe "Polisher::Event" do
 
    it "should not be valid if managed_gem or process is missing" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem1', :source_id => 1
+      gem = ManagedGem.create :name => 'valid-event-test-gem1', :gem_source_id => 1
 
       event = Event.new :managed_gem_id => gem.id, :process => 'create_repo'
       event.valid?.should be(true)
@@ -112,7 +112,7 @@ describe "Polisher::Event" do
    end
 
    it "should not be valid with invalid version qualifier" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem2', :source_id => 1
+      gem = ManagedGem.create :name => 'valid-event-test-gem2', :gem_source_id => 1
 
       event = Event.new :managed_gem_id => gem.id, :process => 'create_repo', :version_qualifier => ">", :gem_version => 5
       event.valid?.should be(true)
@@ -122,7 +122,7 @@ describe "Polisher::Event" do
    end
 
    it "should not be valid if version/qualifier are not both present or nil" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem3', :source_id => 1
+      gem = ManagedGem.create :name => 'valid-event-test-gem3', :gem_source_id => 1
  
       event = Event.new :managed_gem_id => gem.id, :process => 'create_repo', :version_qualifier => ">"
       event.valid?.should be(false)

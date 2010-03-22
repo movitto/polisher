@@ -50,7 +50,7 @@ POLISHER_CONFIG = YAML::load(File.open(Sinatra::Application.polisher_config))[Si
 get '/' do redirect '/gems'; end
 
 get '/gems' do
-  @sources   = Source.find :all
+  @gem_sources   = GemSource.find :all
   @gems      = ManagedGem.find :all
   @processes = Event.processes 
   @version_qualifiers = Event::VERSION_QUALIFIERS
@@ -64,7 +64,7 @@ get '/gems.xml' do
 end
 
 post '/gems/create' do
-  @gem = ManagedGem.new :name => params[:name], :source_id => params[:source_id]
+  @gem = ManagedGem.new :name => params[:name], :gem_source_id => params[:gem_source_id]
   @gem.save!
   @gem.subscribe
   redirect '/gems'
@@ -80,7 +80,7 @@ post '/gems/updated' do
   version = params[:version]
   source_uri = ManagedGem.uri_to_source_uri(params[:gem_uri]) 
 
-  source = Source.find(:first, :conditions => ["uri = ?", source_uri])
+  source = GemSource.find(:first, :conditions => ["uri = ?", source_uri])
   gem    = source.gems.all.find { |gem| gem.name == name }
   events = gem.events.all.find_all { |event| event.applies_to_version?(version) }
   events.each { |event| event.run }
@@ -88,27 +88,27 @@ post '/gems/updated' do
   redirect '/gems'
 end
 
-##################################################################### Sources
+##################################################################### GemSources
 
-get '/sources' do
-  @sources = Source.find :all
-  haml :"sources/index"
+get '/gem_sources' do
+  @gem_sources = GemSource.find :all
+  haml :"gem_sources/index"
 end
 
-get '/sources.xml' do
-  @sources = Source.find :all
-  haml :"sources/index.xml", :layout => false
+get '/gem_sources.xml' do
+  @gem_sources = GemSource.find :all
+  haml :"gem_sources/index.xml", :layout => false
 end
 
-post '/sources/create' do
-  @source = Source.new :name => params[:name], :uri => params[:uri]
-  @source.save!
-  redirect '/sources'
+post '/gem_sources/create' do
+  @gem_source = GemSource.new :name => params[:name], :uri => params[:uri]
+  @gem_source.save!
+  redirect '/gem_sources'
 end
 
-delete '/sources/destroy/:id' do 
-  Source.delete params[:id]
-  redirect '/sources'
+delete '/gem_sources/destroy/:id' do 
+  GemSource.delete params[:id]
+  redirect '/gem_sources'
 end
 
 ##################################################################### Events

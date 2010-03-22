@@ -14,7 +14,7 @@ class CreateManagedGems < ActiveRecord::Migration
   def self.up
     create_table :managed_gems do |t|
       t.string        :name
-      t.references    :source
+      t.references    :gem_source
     end
   end
 

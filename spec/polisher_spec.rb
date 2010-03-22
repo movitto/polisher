@@ -30,20 +30,20 @@ describe "Polisher" do
   end
 
   it "should get gems in xml format" do
-    post '/gems/create', :name => 'gem-xml-test1', :source_id => 1
-    post '/gems/create', :name => 'gem-xml-test2', :source_id => 1
+    post '/gems/create', :name => 'gem-xml-test1', :gem_source_id => 1
+    post '/gems/create', :name => 'gem-xml-test2', :gem_source_id => 1
     get '/gems.xml'
     last_response.should be_ok
 
     expect = "<gems>"
-    ManagedGem.find(:all).each { |g| expect += "<id>#{g.id}</id><name>#{g.name}</name><source_id>#{g.source_id}</source_id>" }
+    ManagedGem.find(:all).each { |g| expect += "<id>#{g.id}</id><name>#{g.name}</name><gem_source_id>#{g.gem_source_id}</gem_source_id>" }
     expect += "</gems>"
     last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
   end
 
   it "should allow gem creations" do
     lambda do
-      post '/gems/create', :name => 'create-gem-test', :source_id => 1
+      post '/gems/create', :name => 'create-gem-test', :gem_source_id => 1
     end.should change(ManagedGem, :count).by(1)
     follow_redirect!
     last_response.should be_ok
@@ -51,7 +51,7 @@ describe "Polisher" do
   end
 
   it "should allow gem deletions" do
-    post '/gems/create', :name => 'delete-gem-test', :source_id => 1
+    post '/gems/create', :name => 'delete-gem-test', :gem_source_id => 1
     gem_id = ManagedGem.find(:first, :conditions => ['name = ?', 'delete-gem-test']).id
     lambda do
       delete "/gems/destroy/#{gem_id}"
@@ -63,7 +63,7 @@ describe "Polisher" do
 
   # run simulate gemcutter api firing process
   it "should successfully post-process an updated gem" do
-      gem   = ManagedGem.create :name => 'foobar', :source_id => 1
+      gem   = ManagedGem.create :name => 'foobar', :gem_source_id => 1
 
       event = Event.create :managed_gem => gem, 
                            :process => "integration_test_handler1",
@@ -83,46 +83,46 @@ describe "Polisher" do
       $integration_test_handler_flags.include?(2).should == false
   end
 
-  it "should respond to /sources" do
-    get '/sources'
+  it "should respond to /gem_sources" do
+    get '/gem_sources'
     last_response.should be_ok
   end
 
-  it "shold allow source creations" do
+  it "shold allow gem source creations" do
     lambda do
-      post '/sources/create', :name => 'create-source-test', :uri => 'http://example1.org'
-    end.should change(Source, :count).by(1)
+      post '/gem_sources/create', :name => 'create-gem-source-test', :uri => 'http://example1.org'
+    end.should change(GemSource, :count).by(1)
     follow_redirect!
     last_response.should be_ok
-    last_request.url.should == "http://example.org/sources"
+    last_request.url.should == "http://example.org/gem_sources"
   end
 
-  it "should get sources in xml format" do
-    post '/sources/create', :name => 'source-xml-test1', :uri => 'http://foo.host'
-    post '/sources/create', :name => 'source-xml-test2', :uri => 'http://bar.host'
-    get '/sources.xml'
+  it "should get gem sources in xml format" do
+    post '/gem_sources/create', :name => 'gem-source-xml-test1', :uri => 'http://foo.host'
+    post '/gem_sources/create', :name => 'gem-source-xml-test2', :uri => 'http://bar.host'
+    get '/gem_sources.xml'
     last_response.should be_ok
 
-    expect = "<sources>"
-    Source.find(:all).each { |s| expect += "<id>#{s.id}</id><name>#{s.name}</name><uri>#{s.uri}</uri>" }
-    expect += "</sources>"
+    expect = "<gem_sources>"
+    GemSource.find(:all).each { |s| expect += "<id>#{s.id}</id><name>#{s.name}</name><uri>#{s.uri}</uri>" }
+    expect += "</gem_sources>"
     last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
   end
 
 
-  it "should allow source deletions" do
-    post '/sources/create', :name => 'delete-source-test', :uri => 'http://example2.org'
-    source_id = Source.find(:first, :conditions => ['name = ?', 'delete-source-test']).id
+  it "should allow gem source deletions" do
+    post '/gem_sources/create', :name => 'delete-gem-source-test', :uri => 'http://example2.org'
+    gem_source_id = GemSource.find(:first, :conditions => ['name = ?', 'delete-gem-source-test']).id
     lambda do
-      delete "/sources/destroy/#{source_id}"
-    end.should change(Source, :count).by(-1)
+      delete "/gem_sources/destroy/#{gem_source_id}"
+    end.should change(GemSource, :count).by(-1)
     follow_redirect!
     last_response.should be_ok
-    last_request.url.should == "http://example.org/sources"
+    last_request.url.should == "http://example.org/gem_sources"
   end
 
   it "shold allow event creations" do
-    gem = ManagedGem.create :name => "create-event-test-gem", :source_id => 1
+    gem = ManagedGem.create :name => "create-event-test-gem", :gem_source_id => 1
     lambda do
       post '/events/create', :managed_gem_id => gem.id, 
                              :process => 'fooproc', 
@@ -136,7 +136,7 @@ describe "Polisher" do
   end
 
   it "should allow event deletions" do
-    gem = ManagedGem.create :name => "delete-event-test-gem", :source_id => 1
+    gem = ManagedGem.create :name => "delete-event-test-gem", :gem_source_id => 1
     post '/events/create', :managed_gem_id => gem.id, :process => 'fooproc'
     lambda do
       delete '/events/destroy/1'

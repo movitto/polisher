@@ -22,7 +22,7 @@ def main()
   uri = "http://localhost:3000"
   command = nil
   gem_name = gem_id = gem_version = gem_uri = nil
-  source_id = source_name = source_uri = nil
+  gem_source_id = gem_source_name = gem_source_uri = nil
   event_id = event_version_qualifier = event_process = event_process_options = nil
 
   # setup cmd line options
@@ -51,14 +51,14 @@ def main()
     opts.on("--gem-updated", "trigger gem updated event, must specify gem name, version, and gem_uri") do
       command = :gem_updated
     end
-    opts.on("--sources", "get list of gem sources") do
-      command = :sources
+    opts.on("--gem-sources", "get list of gem sources") do
+      command = :gem_sources
     end
-    opts.on("--create-source", "create new gem source, must specify source name & uri") do
-      command = :create_source
+    opts.on("--create-gem-source", "create new gem source, must specify source name & uri") do
+      command = :create_gem_source
     end
-    opts.on("--delete-source", "delete gem source, must specify source id") do
-      command = :delete_source
+    opts.on("--delete-gem-source", "delete gem source, must specify source id") do
+      command = :delete_gem_source
     end
     opts.on("--create-event", "create new gem event, must specify gem id, gem version, version qualifier, process, and process options") do
       command = :create_event
@@ -81,14 +81,14 @@ def main()
     opts.on("--gem-uri [uri]", "set gem uri") do |ouri|
       gem_uri = ouri
     end
-    opts.on("--source-id [id]", "set source id") do |id|
-      source_id = id
+    opts.on("--gem-source-id [id]", "set gem source id") do |id|
+      gem_source_id = id
     end
-    opts.on("--source-name [name]", "set source name") do |name|
-      source_name = name
+    opts.on("--gem-source-name [name]", "set gem source name") do |name|
+      gem_source_name = name
     end
-    opts.on("--source-uri [uri]", "set source uri") do |ouri|
-      source_uri = ouri
+    opts.on("--gem-source-uri [uri]", "set gem source uri") do |ouri|
+      gem_source_uri = ouri
     end
     opts.on("--event-id [id]", "set event id") do |id|
       event_id = id
@@ -121,12 +121,12 @@ def main()
    RestClient.get("#{uri}/gems.xml") { |response| puts response }
 
  elsif command == :create_gem
-   if gem_name.nil? || source_id.nil?
+   if gem_name.nil? || gem_source_id.nil?
      puts "must specify gem name and source id when creating gem"
      puts opts
      exit
    end
-   RestClient.post("#{uri}/gems/create", :name => gem_name, :source_id => source_id){ |response| }
+   RestClient.post("#{uri}/gems/create", :name => gem_name, :gem_source_id => gem_source_id){ |response| }
 
  elsif command == :delete_gem 
    if gem_id.nil?
@@ -145,24 +145,24 @@ def main()
    RestClient.post("#{uri}/gems/updated", 
                   :name => gem_name, :version => gem_version, :gem_uri => gem_uri) { |response| }
 
- elsif command == :sources
-   RestClient.get("#{uri}/sources.xml") { |response| puts response }
+ elsif command == :gem_sources
+   RestClient.get("#{uri}/gem_sources.xml") { |response| puts response }
 
- elsif command == :create_source  
-   if source_name.nil? || source_uri.nil?
-     puts "must specify source name and uri when creating source"
+ elsif command == :create_gem_source  
+   if gem_source_name.nil? || gem_source_uri.nil?
+     puts "must specify gem source name and uri when creating source"
      puts opts
      exit
    end
-   RestClient.post("#{uri}/sources/create", :name => source_name, :uri => source_uri) { |response| }
+   RestClient.post("#{uri}/gem_sources/create", :name => gem_source_name, :uri => gem_source_uri) { |response| }
 
- elsif command == :delete_source  
-   if source_id.nil?
-     puts "must specify source id when deleting source"
+ elsif command == :delete_gem_source  
+   if gem_source_id.nil?
+     puts "must specify gem source id when deleting source"
      puts opts
      exit
    end
-   RestClient.delete("#{uri}/sources/destroy/#{source_id}") { |response| }
+   RestClient.delete("#{uri}/gem_sources/destroy/#{gem_source_id}") { |response| }
 
  elsif command == :create_event  
    if gem_id.nil? || event_process.nil? || gem_version.nil? || event_version_qualifier.nil?

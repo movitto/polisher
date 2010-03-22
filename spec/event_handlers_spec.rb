@@ -29,7 +29,7 @@ describe "Polisher::EventHandlers" do
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/templates')
 
      unless defined? @gem
-       @gem = ManagedGem.create :name => 'polisher', :source_id => 1
+       @gem = ManagedGem.create :name => 'polisher', :gem_source_id => 1
      end
   end
 

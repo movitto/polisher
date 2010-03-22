@@ -17,11 +17,14 @@ require 'net/http'
 # Gem representation in polisher, associated w/ rubygem being
 # managed, used to track updates and invoke handlers
 class ManagedGem < ActiveRecord::Base
-   belongs_to :source
+   belongs_to :gem_source
    has_many :events
 
-   validates_presence_of :name, :source_id
-   validates_uniqueness_of :name, :scope => :source_id
+   alias :source  :gem_source
+   alias :source= :gem_source=
+
+   validates_presence_of :name, :gem_source_id
+   validates_uniqueness_of :name, :scope => :gem_source_id
 
    # TODO add validation to verify gem can be found in the associated gem source
 
@@ -40,7 +43,7 @@ class ManagedGem < ActiveRecord::Base
       headers = { 'Authorization' => api_key }
       data = "gem_name=#{name}&url=#{callback_url}"
 
-      http = Net::HTTP.new(URI.parse(source.uri).host, 80) 
+      http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80) 
       res = http.post(subscribe_path, data, headers)
       # TODO handle res = #<Net::HTTPNotFound:0x7f1df8319e40> This gem could not be found
    end
@@ -52,7 +55,7 @@ class ManagedGem < ActiveRecord::Base
       subscribe_path = '/api/v1/web_hooks.json'
       headers = { 'Authorization' => api_key }
 
-      http = Net::HTTP.new(URI.parse(source.uri).host, 80) 
+      http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80) 
       res  = http.get(subscribe_path, headers).body
       res  = JSON.parse(res)
       return res.has_key?(name)
@@ -67,14 +70,14 @@ class ManagedGem < ActiveRecord::Base
       subscribe_path = "/api/v1/web_hooks/remove?gem_name=#{name}&url=#{callback_url}"
       headers = { 'Authorization' => api_key }
 
-      http = Net::HTTP.new(URI.parse(source.uri).host, 80) 
+      http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80) 
       res = http.delete(subscribe_path, headers)
    end
 
    # return hash of gem attributes/values retreived from remote source
    def get_info
        info = nil
-       source_uri = URI.parse(source.uri).host
+       source_uri = URI.parse(gem_source.uri).host
        get_path = "/api/v1/gems/#{name}.json"
        Net::HTTP.start(source_uri, 80) { |http|
           info = JSON.parse(http.get(get_path).body)

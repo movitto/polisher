@@ -1,18 +1,18 @@
 %h4
-  Sources
+  Gem Sources
 
 %ul
-  - @sources.sort { |x,y| x.name <=> y.name }.each do |source|
+  - @gem_sources.sort { |x,y| x.name <=> y.name }.each do |source|
     %li
       %h5
       = source.name
-      %a{:href => url_for("/sources/destroy/#{source.id}"), :class => 'delete_source_link'}
+      %a{:href => url_for("/gem_sources/destroy/#{source.id}"), :class => 'delete_source_link'}
         (delete)
 
 %h4
   New Source
 
-%form{:method => "post", :action => url_for("/sources/create")}
+%form{:method => "post", :action => url_for("/gem_sources/create")}
   %table
     %tr
       %td
@@ -33,7 +33,7 @@
 %script{:type => "text/javascript"}
   :plain
     $('.delete_source_link').bind('click', function(e){
-       c = confirm("delete source?")
+       c = confirm("delete gem source?")
        if(c){
          delete_request(this.href, function(result) { reload(); });
        }

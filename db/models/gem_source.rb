@@ -10,9 +10,9 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-# Source represents a remote endpoint which we will use
+# GemSource represents a remote endpoint which we will use
 # the gem API to get gems / subscribe to updates
-class Source < ActiveRecord::Base
+class GemSource < ActiveRecord::Base
    has_many :managed_gems
 
    alias :gems :managed_gems
