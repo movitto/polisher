@@ -1,3 +1,4 @@
+#!/usr/bin/ruby
 # ruby gem polisher command line client
 #
 # Copyright (C) 2010 Red Hat, Inc.
@@ -11,8 +12,6 @@
 # You should have received a copy of the the GNU Affero
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
-
-#!/usr/bin/ruby
 
 require 'rubygems'
 require 'optparse'
