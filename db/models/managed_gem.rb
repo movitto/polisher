@@ -13,6 +13,7 @@
 require 'uri'
 require 'json'
 require 'net/http'
+require 'curl' # requires 'curb' package
 
 # Gem representation in polisher, associated w/ rubygem being
 # managed, used to track updates and invoke handlers
@@ -95,19 +96,10 @@ class ManagedGem < ActiveRecord::Base
      version = info["version"] if version.nil?
      path = dir + "/#{name}-#{version}.gem" if path.nil?
 
-     # handle redirects
-     found = false
-     until found  # TODO should impose a max tries
-       uri = URI.parse(gem_uri)
-       http = Net::HTTP.new(uri.host, 80) 
-       res =  http.get(uri.path)
-       if res.code == "200"
-          File.write path, res.body
-          found = true
-       else
-          gem_uri = res.header['location']
-       end 
-     end 
+     curl = Curl::Easy.new(gem_uri)
+     curl.follow_location = true # follow redirects
+     curl.perform
+     File.write path, curl.body_str
 
      return path
    end

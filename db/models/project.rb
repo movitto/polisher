@@ -18,4 +18,10 @@ class Project < ActiveRecord::Base
 
   validates_presence_of :name
   validates_uniqueness_of :name
+
+  # Download all project sources to specified :dir
+  def download_to(args = {})
+    dir  = args.has_key?(:dir)  ? args[:dir]  : nil
+    sources.each { |source| source.download_to :dir => dir }
+  end
 end

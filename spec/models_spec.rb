@@ -132,6 +132,24 @@ describe "Polisher::ProjectSource" do
       source2 = ProjectSource.new :uri => 'uri', :project_id => project.id
       source2.valid?.should be(false)
   end
+
+  it "should be downloadable" do
+     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+     FileUtils.mkdir_p(ARTIFACTS_DIR)
+     
+     project = Project.create!(:name => 'project-source-download-to-test')
+     source = ProjectSource.create!(
+        #:uri => 'ftp://ftp.ruby-lang.org/pub/ruby/1.8/ruby-1.8.6-p388.tar.bz2',
+        :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
+        :project => project)
+     path = source.download_to(:dir => ARTIFACTS_DIR)
+     File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
+     FileUtils.rm(ARTIFACTS_DIR + '/joni.spec')
+     path.should == ARTIFACTS_DIR + '/joni.spec'
+
+     source.download_to(:path => ARTIFACTS_DIR + '/joni.spec')
+     File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
+  end
 end
 
 describe "Polisher::Event" do

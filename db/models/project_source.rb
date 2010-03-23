@@ -17,4 +17,20 @@ class ProjectSource < ActiveRecord::Base
   validates_presence_of :uri
 
   validates_uniqueness_of :uri, :scope => :project_id
+
+  # Download all project sources to specified :path or :dir
+   def download_to(args = {})
+     path = args.has_key?(:path) ? args[:path] : nil
+     dir  = args.has_key?(:dir)  ? args[:dir]  : nil
+
+     urio = URI::parse(uri)
+     path = dir + "/" + urio.path.split('/').last if path.nil?
+
+     curl = Curl::Easy.new(uri)
+     curl.follow_location = true # follow redirects
+     curl.perform
+     File.write path, curl.body_str
+
+     return path
+   end
 end
