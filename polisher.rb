@@ -111,6 +111,41 @@ delete '/gem_sources/destroy/:id' do
   redirect '/gem_sources'
 end
 
+##################################################################### Projects
+
+get '/projects' do
+  @projects = Project.find :all
+  haml :"projects/index"
+end
+
+get '/projects.xml' do
+  @projects = Project.find :all
+  haml :"projects/index.xml", :layout => false
+end
+
+post '/projects/create' do
+  project = Project.new :name => params[:name]
+  project.save!
+  redirect '/projects'
+end
+
+delete '/projects/destroy/:id' do
+  Project.delete params[:id]
+  redirect '/projects'
+end
+
+##################################################################### Project Sources
+
+post '/project_sources/create' do
+  ProjectSource.create!(:uri => params[:uri], :project_id => params['project_id'])
+  redirect '/projects'
+end
+
+delete '/project_sources/destroy/:id' do
+  ProjectSource.delete params[:id]
+  redirect '/projects'
+end
+
 ##################################################################### Events
 
 post '/events/create' do

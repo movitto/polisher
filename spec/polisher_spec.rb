@@ -88,7 +88,7 @@ describe "Polisher" do
     last_response.should be_ok
   end
 
-  it "shold allow gem source creations" do
+  it "should allow gem source creations" do
     lambda do
       post '/gem_sources/create', :name => 'create-gem-source-test', :uri => 'http://example1.org'
     end.should change(GemSource, :count).by(1)
@@ -119,6 +119,78 @@ describe "Polisher" do
     follow_redirect!
     last_response.should be_ok
     last_request.url.should == "http://example.org/gem_sources"
+  end
+
+  it "should respond to /projects" do
+    get '/projects'
+    last_response.should be_ok
+  end
+
+  it "should allow project creations" do
+    lambda do
+      post '/projects/create', :name => 'create-project-test'
+    end.should change(Project, :count).by(1)
+    project = Project.find(:first, :conditions => [ 'name = ?', 'create-project-test'])
+    project.should_not be_nil
+
+    follow_redirect!
+    last_response.should be_ok
+    last_request.url.should == "http://example.org/projects"
+  end
+
+  it "should get projects in xml format" do
+    post '/projects/create', :name => 'project-xml-test1', :sources => [{:uri => 'ccpts1'}]
+    post '/projects/create', :name => 'project-xml-test2'
+    get '/projects.xml'
+    last_response.should be_ok
+
+    expect = "<projects>"
+    Project.find(:all).each { |p|
+      expect += "<id>#{p.id}</id><name>#{p.name}</name><sources>"
+      p.sources.each { |s|
+        expect += "<source><id>#{s.id.to_s}</id><uri>#{s.uri}</uri></source>"
+      }
+      expect += "</sources>"
+    }
+    expect += "</projects>"
+    last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
+  end
+
+
+  it "should allow project deletions" do
+    post '/projects/create', :name => 'delete-project-test'
+    project_id = Project.find(:first, :conditions => ['name = ?', 'delete-project-test']).id
+    lambda do
+      delete "/projects/destroy/#{project_id}"
+    end.should change(Project, :count).by(-1)
+    follow_redirect!
+    last_response.should be_ok
+    last_request.url.should == "http://example.org/projects"
+  end
+
+  it "should allow project source creations" do
+    project = Project.create! :name => "create-project_source-test1"
+    lambda do
+      post '/project_sources/create', :uri => 'create-project_source-test', :project_id => project.id
+    end.should change(ProjectSource, :count).by(1)
+    project = ProjectSource.find(:first, :conditions => [ 'uri = ? AND project_id = ?', 'create-project_source-test', project.id])
+    project.should_not be_nil
+
+    follow_redirect!
+    last_response.should be_ok
+    last_request.url.should == "http://example.org/projects"
+  end
+
+  it "should allow project source deletions" do
+    project = Project.create! :name => "create-project_source-test2"
+    post '/project_sources/create', :uri => 'create-project_source-test2', :project_id => project.id
+    ps = ProjectSource.find(:first, :conditions => [ 'uri = ? AND project_id = ?', 'create-project_source-test2', project.id])
+    lambda do
+      delete "/project_sources/destroy/#{ps.id}"
+    end.should change(ProjectSource, :count).by(-1)
+    follow_redirect!
+    last_response.should be_ok
+    last_request.url.should == "http://example.org/projects"
   end
 
   it "shold allow event creations" do

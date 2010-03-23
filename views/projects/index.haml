@@ -1,0 +1,75 @@
+%h4
+  Projects
+
+%ul
+  - @projects.sort { |x,y| x.name <=> y.name }.each do |project|
+    %li
+      %h5
+      = project.name
+      %a{:href => url_for("/projects/destroy/#{project.id}"), :class => 'delete_project_link'}
+        (delete)
+      %br/
+      %h6
+        sources
+      %ul
+        - project.sources.each do |source|
+          %li
+            = source.uri
+            %a{:href => url_for("/project_sources/destroy/#{source.id}"), :class => 'delete_project_source_link'}
+              (delete)
+
+%h4
+  New Project
+
+%form{:method => "post", :action => url_for("/projects/create")}
+  %table
+    %tr
+      %td
+        Name:
+      %td
+        %input{:type => "text", :id => "name", :name => "name"}
+
+    %tr
+      %td
+        %input{:type => "submit", :value => "submit"}
+
+%h4
+  New Project Source
+
+%form{:method => "post", :action => url_for("/project_sources/create")}
+  %table
+    %tr
+      %td
+        Project:
+      %td
+        %select{:id => "project_id", :name => "project_id"}
+          - @projects.each do |project|
+            %option{:id => project.id, :value => project.id}
+              = project.name
+
+    %tr
+      %td
+        URI:
+      %td
+        %input{:type => "text", :id => "uri", :name => "uri"}
+
+    %tr
+      %td
+        %input{:type => "submit", :value => "submit"}
+
+%script{:type => "text/javascript"}
+  :plain
+    $('.delete_project_link').bind('click', function(e){
+       c = confirm("delete project?")
+       if(c){
+         delete_request(this.href, function(result) { reload(); });
+       }
+       return false;
+    });
+    $('.delete_project_source_link').bind('click', function(e){
+       c = confirm("delete project source?")
+       if(c){
+         delete_request(this.href, function(result) { reload(); });
+       }
+       return false;
+    });
