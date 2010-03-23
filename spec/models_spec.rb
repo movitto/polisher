@@ -95,20 +95,66 @@ describe "Polisher::ManagedGem" do
 
 end
 
+describe "Polisher::Project" do
+  it "should not be valid if name is missing" do
+      project = Project.new :name => 'foo'
+      project.valid?.should be(true)
+
+      project.name = nil
+      project.valid?.should be(false)
+  end
+
+
+  it "should not be valid if duplicate name exists" do
+      Project.create! :name => 'dup-project-name-test'
+      project = Project.new :name => 'dup-project-name-test'
+      project.valid?.should be(false)
+  end
+end
+
+describe "Polisher::ProjectSource" do
+  it "should not be valid if project_id or uri is missing" do
+      project = Project.create :name => 'project-source-test1'
+      source = ProjectSource.new :uri => 'uri', :project_id => project.id
+      source.valid?.should be(true)
+
+      source.uri = nil
+      source.valid?.should be(false)
+      source.uri = 'foo'
+
+      source.project_id = nil
+      source.valid?.should be(false)
+  end
+
+  it "should not be valid if uri is not unique in project scope" do
+      project = Project.create! :name => 'project-uri-test'
+      source1 = ProjectSource.create! :uri => 'uri', :project_id => project.id
+      source2 = ProjectSource.new :uri => 'uri', :project_id => project.id
+      source2.valid?.should be(false)
+  end
+end
+
 describe "Polisher::Event" do
 
-   it "should not be valid if managed_gem or process is missing" do
+   it "should not be valid if process is missing" do
       gem = ManagedGem.create :name => 'valid-event-test-gem1', :gem_source_id => 1
-
       event = Event.new :managed_gem_id => gem.id, :process => 'create_repo'
       event.valid?.should be(true)
 
-      event.managed_gem = nil
-      event.valid?.should be(false)
-      event.managed_gem = gem
-
       event.process = nil
       event.valid?.should be(false)
+   end
+
+   it "should not be valid if both managed_gem and project are missing" do
+      gem = ManagedGem.create :name => 'valid-event-test-gem1b', :gem_source_id => 1
+      project = Project.create :name => 'valid-event-test-project1'
+      event = Event.new :process => 'create_repo'
+      event.valid?.should be(false)
+      event.managed_gem = gem
+      event.valid?.should be(true)
+      event.managed_gem = nil
+      event.project = project
+      event.valid?.should be(true)
    end
 
    it "should not be valid with invalid version qualifier" do

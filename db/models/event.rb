@@ -14,7 +14,12 @@ class Event < ActiveRecord::Base
    belongs_to :managed_gem
    alias :gem :managed_gem
 
-   validates_presence_of   :managed_gem_id, :process
+   belongs_to :project
+
+   validates_presence_of   :process
+
+   validates_presence_of :managed_gem_id, :if => Proc.new { |e| e.project_id.nil? }
+   validates_presence_of :project_id, :if => Proc.new { |e| e.managed_gem_id.nil? }
 
    # TODO right mow just returning a fixed list, at some point dynamically generate
    def self.processes
