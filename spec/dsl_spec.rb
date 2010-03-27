@@ -12,8 +12,6 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-require File.dirname(__FILE__) + '/spec_helper'
-
 ##########################
 ## target typical dsl use case:
 #polisher "http://localhost:3000"
@@ -38,11 +36,172 @@ require File.dirname(__FILE__) + '/spec_helper'
 #
 ######
 ## Test firing events
-#gem(:name => 'myproject').updated_version "2.0"
-#gem(:name => 'myproject').updated_version "1.5"
+#gem(:name => 'myproject').released "2.0"
+#gem(:name => 'myproject').released "1.5"
 #project(:name => "official ruby").released :rubyxver => '1.8', :arcver => '1.8.6-p388"
 
-describe "Polisher::dsl" do
-   it "" do
+require File.dirname(__FILE__) + '/spec_helper'
+
+require 'thin'
+require 'lib/dsl'
+
+# start up the polisher server to handle rest requests
+server = Thin::Server.new('127.0.0.1', 3000, app)
+server_thread = Thread.new { server.start }
+
+polisher "http://localhost:3000"
+
+describe "Polisher::DSL::ManagedGem" do
+   it "should be instantiatable from xml" do
+     xml = "<gem><id>10</id><name>foo</name><gem_source_id>20</gem_source_id></gem>"
+     gem = Polisher::ManagedGem.from_xml xml
+     gem.id.should   == 10
+     gem.name.should == "foo"
+     gem.gem_source_id.should  == 20
+   end
+
+   it "should allow event creations" do
+     db_gem = ManagedGem.create! :name => "gem-event-creation-test", :gem_source_id => 1
+     gem = Polisher::ManagedGem.new :id => db_gem.id, :name => db_gem.name
+     lambda {
+       gem.on_version ">=", "5.2", "do something", "options"
+     }.should change(Event, :count).by(1)
+     Event.find(:first, :conditions => [ 'managed_gem_id = ? AND version_qualifier = ? AND gem_version = ? AND process = ? AND process_options = ?',
+                                          gem.id, ">=", "5.2", "do something", "options" ]).
+                                          should_not be_nil
+   end
+
+   it "should trigger update" do
+      db_gem   = ManagedGem.create :name => 'dsl-trigger-test', :gem_source_id => 1
+      event = Event.create :managed_gem => db_gem,
+                           :process => "integration_test_handler1",
+                           :version_qualifier => '>',
+                           :gem_version => 1.2
+
+      source = Polisher::GemSource.new :uri => "http://gemcutter.org"
+      gem = Polisher::ManagedGem.new :id => db_gem.id, :name => db_gem.name, :source => source
+      gem.released 1.6
+      $integration_test_handler_flags.include?(1).should == true
    end
 end
+
+describe "Polisher::DSL::GemSource" do
+   it "should be instantiatable from xml" do
+     xml = "<source><id>10</id><name>foo</name><uri>http://host</uri></source>"
+     source = Polisher::GemSource.from_xml xml
+     source.id.should   == 10
+     source.name.should == "foo"
+     source.uri.should  == "http://host"
+   end
+end
+
+describe "Polisher::DSL::Project" do
+   it "should be instantiatable from xml" do
+     xml = "<project><id>10</id><name>foo</name><sources><source><id>s1</id><uri>uuu1</uri></source><source><id>2</id><uri>uuu2</uri></source></sources></project>"
+     project = Polisher::Project.from_xml xml
+     project.id.should   == 10
+     project.name.should == "foo"
+     project.sources.size.should == 2
+     project.sources[0].should == "uuu1"
+     project.sources[1].should == "uuu2"
+   end
+
+   # FIXME uncomment
+   #it "should allow event creations" do
+   #  db_project = Project.create! :name => "project-event-creation-test"
+   #  project    = Polisher::Project.new :id => db_project.id, :name => db_project.name
+   #  lambda {
+   #    project.on_version "<", "3.9", "do something", "options"
+   #  }.should change(Event, :count).by(1)
+   #  Event.find(:first, :conditions => [ 'project_id = ? AND version_qualifier = ? AND version = ? AND process = ? AND process_options = ?',
+   #                                       project.id, "<", "3.9", "do something", "options" ]).
+   #                                       should_not be_nil
+   #end
+
+   # FIXME uncomment
+   #it "should trigger release" do
+   #   db_project   = Project.create :name => 'dsl-trigger-test'
+   #   event = Event.create :project => db_project,
+   #                        :process => "integration_test_handler2",
+   #                        :version_qualifier => '<',
+   #                        :gem_version => 1.0
+
+   #   project = Polisher::Project.new :id => db_project.id, :name => db_project.name
+   #   project.released 0.9
+   #   $integration_test_handler_flags.include?(2).should == true
+   #end
+end
+
+
+describe "Polisher::DSL" do
+  it "should return all gems" do
+      gem1   = ManagedGem.create! :name => 'dsl-gems-test1', :gem_source_id => 1
+      gem2   = ManagedGem.create! :name => 'dsl-gems-test2', :gem_source_id => 1
+      test_gems = gems
+      ManagedGem.find(:all).each { |gem|
+        test_gems.find { |g| g.name == gem.name && g.source.name == gem.source.name }.should_not be_nil
+      }
+  end
+
+  it "should find or create gem" do
+    test_gem = nil
+    lambda {
+      test_gem = gem :name => "dsl-gem-test", :source => "gemcutter"
+    }.should change(ManagedGem, :count).by(1)
+    db_gem = ManagedGem.find(:first, :conditions => ['name = ? AND gem_source_id = ?', 'dsl-gem-test', 1])
+    test_gem.id.should == db_gem.id
+
+    lambda {
+      test_gem = gem :name => "dsl-gem-test", :gem_source_id => 1
+    }.should_not change(ManagedGem, :count).by(1)
+    test_gem.id.should == db_gem.id
+
+    test_gem = gem :name => "dsl-gem-test"
+    test_gem.id.should == db_gem.id
+  end
+
+  it "should return all sources" do
+      source1   = GemSource.create! :name => 'dsl-sources-test1', :uri => "http://test1.host"
+      source2   = GemSource.create! :name => 'dsl-sources-test2', :uri => "http://test2.host"
+      test_sources = sources
+      GemSource.find(:all).each { |source|
+        test_sources.find { |s| s.name == source.name && s.uri == source.uri }.should_not be_nil
+      }
+      test_sources.find { |s| s.name == "dsl-sources-test1" && s.uri == "http://test1.host" }.should_not be_nil
+      test_sources.find { |s| s.name == "dsl-sources-test2" && s.uri == "http://test2.host" }.should_not be_nil
+  end
+
+  it "should find or create source" do
+    test_source = nil
+    lambda {
+      test_source = source :name => "dsl-source-test", :uri => "http://source.test"
+    }.should change(GemSource, :count).by(1)
+    db_source = GemSource.find(:first, :conditions => ['name = ? AND uri = ?', 'dsl-source-test', 'http://source.test'])
+    test_source.id.should == db_source.id
+
+    lambda {
+      test_source = source :name => "dsl-source-test", :uri => "http://source.test"
+    }.should_not change(GemSource, :count)
+    test_source.id.should == db_source.id
+
+    test_source = source :name => "dsl-source-test"
+    test_source.id.should == db_source.id
+  end
+
+  # FIXME test projects, project
+end
+
+# prolly a better way todo this, but fine for now
+$integration_test_handler_flags = []
+
+def integration_test_handler1(gem)
+  $integration_test_handler_flags << 1
+end
+
+def integration_test_handler2(gem)
+  $integration_test_handler_flags << 2
+end
+
+# stop the sinatra server
+#server.stop!
+#server_thread.kill!

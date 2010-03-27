@@ -36,7 +36,7 @@ describe "Polisher" do
     last_response.should be_ok
 
     expect = "<gems>"
-    ManagedGem.find(:all).each { |g| expect += "<id>#{g.id}</id><name>#{g.name}</name><gem_source_id>#{g.gem_source_id}</gem_source_id>" }
+    ManagedGem.find(:all).each { |g| expect += "<gem><id>#{g.id}</id><name>#{g.name}</name><gem_source_id>#{g.gem_source_id}</gem_source_id></gem>" }
     expect += "</gems>"
     last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
   end
@@ -104,7 +104,7 @@ describe "Polisher" do
     last_response.should be_ok
 
     expect = "<gem_sources>"
-    GemSource.find(:all).each { |s| expect += "<id>#{s.id}</id><name>#{s.name}</name><uri>#{s.uri}</uri>" }
+    GemSource.find(:all).each { |s| expect += "<source><id>#{s.id}</id><name>#{s.name}</name><uri>#{s.uri}</uri></source>" }
     expect += "</gem_sources>"
     last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences
   end
@@ -146,11 +146,11 @@ describe "Polisher" do
 
     expect = "<projects>"
     Project.find(:all).each { |p|
-      expect += "<id>#{p.id}</id><name>#{p.name}</name><sources>"
+      expect += "<project><id>#{p.id}</id><name>#{p.name}</name><sources>"
       p.sources.each { |s|
         expect += "<source><id>#{s.id.to_s}</id><uri>#{s.uri}</uri></source>"
       }
-      expect += "</sources>"
+      expect += "</sources></project>"
     }
     expect += "</projects>"
     last_response.body.gsub(/\s*/, '').should == expect.gsub(/\s*/, '') # ignore whitespace differences

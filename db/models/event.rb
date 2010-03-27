@@ -40,6 +40,7 @@ class Event < ActiveRecord::Base
 
    # determine if event applies to specified version
    def applies_to_version?(version)
+     # FIXME this won't work w/ version schemes w/ 3 or more decimal points
      gv, ev = version.to_f, gem_version.to_f
      return (["", nil].include? version_qualifier ) ||
             (version_qualifier == "="  && gv == ev) ||

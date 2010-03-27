@@ -17,20 +17,20 @@ GEM_NAME='polisher'
 PKG_VERSION='0.3'
 
 namespace :db do
+  desc "Migrate the database"
   task :migrate do
-    desc "Migrate the database"
     Polisher::DB.connect Polisher::DB.load_config('./config/database.yml', env), logger
     Polisher::DB.migrate './db/migrations'
   end
 
+  desc "Rollback the database"
   task :rollback do
-    desc "Rollback the database"
     Polisher::DB.connect Polisher::DB.load_config('./config/database.yml', env), logger
     Polisher::DB.rollback './db/migrations'
   end
 
+  desc "Drop all tables in the database"
   task :drop_tables do
-    desc "Drop all tables in the database"
     Polisher::DB.connect Polisher::DB.load_config('./config/database.yml', env), logger
     Polisher::DB.drop_tables './db/migrations'
   end

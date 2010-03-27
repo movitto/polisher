@@ -150,7 +150,7 @@ end
 
 post '/events/create' do
   version = (params[:gem_version] != '*' ? params[:gem_version] : '')
-  @event = Event.new  :managed_gem_id  => ManagedGem.find(params[:managed_gem_id]),
+  @event = Event.new  :managed_gem  => ManagedGem.find(params[:managed_gem_id]),
                       :process => params[:process],
                       :gem_version => version,
                       :version_qualifier => params[:version_qualifier],
