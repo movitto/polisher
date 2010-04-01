@@ -194,11 +194,11 @@ end
 # prolly a better way todo this, but fine for now
 $integration_test_handler_flags = []
 
-def integration_test_handler1(gem)
+def integration_test_handler1(entity, process_options = [], optional_params = {})
   $integration_test_handler_flags << 1
 end
 
-def integration_test_handler2(gem)
+def integration_test_handler2(entity, process_options = [], optional_params = {})
   $integration_test_handler_flags << 2
 end
 

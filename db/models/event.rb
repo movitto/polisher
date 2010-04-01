@@ -20,11 +20,15 @@ class Event < ActiveRecord::Base
 
    validates_presence_of :managed_gem_id, :if => Proc.new { |e| e.project_id.nil? }
    validates_presence_of :project_id, :if => Proc.new { |e| e.managed_gem_id.nil? }
+   # TODO also need the XOR condition, eg both can't be set at the same time
 
    # TODO right mow just returning a fixed list, at some point dynamically generate
    def self.processes
       ["create_package", "update_repo", "run_test_suite", "notify_subscribers"]
    end
+
+   # XXX FIXME we need this for security
+   #validates_inclusion_of :process, :in => Event.processes
 
    #  version qualifiers
    VERSION_QUALIFIERS = ['', '=', '>', '<', '>=', '<=']
@@ -32,6 +36,7 @@ class Event < ActiveRecord::Base
    validates_inclusion_of :version_qualifier, :in => VERSION_QUALIFIERS, 
                           :if => Proc.new { |e| !e.version_qualifier.nil? }
 
+   # TODO change name of this column to 'version'
    validates_presence_of :gem_version,
                          :if => Proc.new { |e| !e.version_qualifier.nil? }
 
@@ -51,17 +56,17 @@ class Event < ActiveRecord::Base
    end
 
    # run the event
-   def run
+   def run(params = {})
       # covert process to method name
       handler = method(process.intern)
 
-      # generate array of params from semi-colon seperated options
-      params  = process_options.nil? ? [] : process_options.split(';')
+      entity = gem
+      entity = project if entity.nil?
 
-      # first param is always the gem
-      params.unshift gem
+      # generate array of event params from gem/project, semi-colon seperated process options, and options params
+      event_params  = [entity, (process_options.nil? ? [] : process_options.split(';')), params]
 
       # invoke
-      handler.call *params
+      handler.call *event_params
    end
 end

@@ -63,9 +63,9 @@ describe "Polisher::ManagedGem" do
 
   it "should successfully subscribe/unsubscribe to updates" do
      gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
-     gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/updated/1"
+     gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
      gem.subscribed?.should == true
-     gem.unsubscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/updated/1"
+     gem.unsubscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
      gem.subscribed?.should == false
   end
 
@@ -243,15 +243,34 @@ describe "Polisher::Event" do
       $test_event_run_hash[:second].should == "b"
       $test_event_run_hash[:third].should == "c"
    end
+
+   it "should successfully run event process w/ optional params" do
+      project = Project.new :name => "fumanchu"
+      event = Event.new :project => project, :process => "test_event_run_method", :process_options => "a;b;c"
+      event.run(:key1 => "val1", :some => "thing", :answer => 42)
+
+      $test_event_run_hash[:key1].should_not be_nil
+      $test_event_run_hash[:some].should_not be_nil
+      $test_event_run_hash[:answer].should_not be_nil
+
+      $test_event_run_hash[:project].name.should == "fumanchu"
+      $test_event_run_hash[:key1].should == "val1"
+      $test_event_run_hash[:some].should == "thing"
+      $test_event_run_hash[:answer].should == 42
+   end
 end
 
 # prolly should fixure out a better way todo this
 $test_event_run_hash = {}
 
 # helper method, invoked in Event::run spec
-def test_event_run_method(gem, first, second, third)
-  $test_event_run_hash[:gem] = gem
-  $test_event_run_hash[:first]  = first
-  $test_event_run_hash[:second] = second
-  $test_event_run_hash[:third]  = third
+def test_event_run_method(entity, process_options = [nil, nil, nil], optional_params = {})
+  $test_event_run_hash[:gem]     = entity if entity.class == ManagedGem
+  $test_event_run_hash[:project] = entity if entity.class == Project
+  $test_event_run_hash[:first]  = process_options[0]
+  $test_event_run_hash[:second] = process_options[1]
+  $test_event_run_hash[:third]  = process_options[2]
+  $test_event_run_hash[:key1]   = optional_params[:key1]
+  $test_event_run_hash[:some]   = optional_params[:some]
+  $test_event_run_hash[:answer] = optional_params[:answer]
 end

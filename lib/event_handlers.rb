@@ -1,6 +1,9 @@
 # Gem event handler callbacks,
 # A method should exist here for every process supported by the system.
-# The method should share the same name w/ the corresponding process
+# Each method should share the same name w/ the corresponding process.
+# Each method should take three parameters the gem/project which the event is being run on,
+#  an array of process options associated w/ the event, and a hash of any parameter names/values
+#  passed in when the event is invoked.
 #
 # Copyright (C) 2010 Red Hat, Inc.
 # Written by Mohammed Morsi <mmorsi@redhat.com>
@@ -19,8 +22,12 @@ require 'net/smtp'
 
 # Convert gem into another package format.
 # Right now uses gem2rpm to create rpm spec, taking optional template file name
-# TODO extend/modify to support any other package format
-def create_package(gem, template_file = '')
+# TODO extend/modify to support any other output package format
+# TODO add support for creating project package (manaully subin params to source uri's and process ERB template like gem2rpm), add optional params here
+def create_package(entity, process_options = [''], optional_params = {})
+   gem = entity
+   template_file = process_options[0]
+
    # d/l gem into artifacts/gems dir, link it into the artifacts/SOURCES dir
    gem_file_path = gem.download_to :dir => ARTIFACTS_DIR + "/gems"
    gem_file = gem_file_path.split('/').last
@@ -47,7 +54,11 @@ end
 # Update specified repository w/ latest gem artifact.
 # Right now updates specified yum repo w/ newly created gem rpm
 # TODO extend/modify to support other repository formats
-def update_repo(gem, repository)
+# TODO add support for adding project packages to repo
+def update_repo(entity, process_options, optional_params = {})
+   gem = entity
+   repository = process_options[0]
+
    # create the repository dir if it doesn't exist
    repo_dir = ARTIFACTS_DIR + "/repos/#{repository}"
    Dir.mkdir repo_dir unless File.directory? repo_dir
@@ -72,11 +83,14 @@ def update_repo(gem, repository)
 end
 
 # run gem's test suite against specified repository
-def run_test_suite(gem, repository)
+def run_test_suite(entity, process_options, optional_params = {})
 end
 
 # notify a list of recipients of gem update
-def notify_subscribers(gem, recipients = [])
+def notify_subscribers(entity, process_options, optional_params = {})
+    gem = entity
+    recipients = process_options
+
     from    = POLISHER_CONFIG['email_from']
     subject = POLISHER_CONFIG['email_subject']
     body    = POLISHER_CONFIG['email_body']

@@ -49,8 +49,8 @@ def main()
     opts.on("--delete-gem", "delete managed gem, must specify gem id") do
       command = :delete_gem
     end
-    opts.on("--gem-updated", "trigger gem updated event, must specify gem name, version, and gem_uri") do
-      command = :gem_updated
+    opts.on("--gem-released", "trigger gem released event, must specify gem name, version, and gem_uri") do
+      command = :gem_released
     end
     opts.on("--gem-sources", "get list of gem sources") do
       command = :gem_sources
@@ -164,13 +164,13 @@ def main()
    end
    RestClient.delete("#{uri}/gems/destroy/#{gem_id}"){ |response| }
 
- elsif command == :gem_updated 
+ elsif command == :gem_released
    if gem_name.nil? || gem_version.nil? || gem_uri.nil?
      puts "must specify gem name, version, and uri when triggering update"
      puts opts
      exit
    end
-   RestClient.post("#{uri}/gems/updated", 
+   RestClient.post("#{uri}/gems/released",
                   :name => gem_name, :version => gem_version, :gem_uri => gem_uri) { |response| }
 
  elsif command == :gem_sources

@@ -51,9 +51,9 @@ class ManagedGem
                     :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
    end
 
-   # Test fire gem updated event for specified version
+   # Test fire gem released event for specified version
    def released(version)
-     RestClient.post("#{$polisher_uri}/gems/updated", 
+     RestClient.post("#{$polisher_uri}/gems/released",
                     :name    => name, :version => version, 
                     :gem_uri => source.uri + "/gems/#{name}-#{version}.gem" ) { |response| }
    end
@@ -123,9 +123,9 @@ class Project
     RestClient.post("#{$polisher_uri}/project_sources/create", :project_id => id, :uri => uri) { |response| }
   end
 
-  # Test fire gem updated event for specified version
+  # Test fire project released event for specified version
   def released(version)
-     RestClient.post("#{$polisher_uri}/projects/released", 
+     RestClient.post("#{$polisher_uri}/projects/released",
                     :name    => name, :version => version ) { |response| }
   end
 end

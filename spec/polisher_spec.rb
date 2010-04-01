@@ -62,7 +62,7 @@ describe "Polisher" do
   end
 
   # run simulate gemcutter api firing process
-  it "should successfully post-process an updated gem" do
+  it "should successfully post-process a released gem" do
       gem   = ManagedGem.create :name => 'foobar', :gem_source_id => 1
 
       event = Event.create :managed_gem => gem, 
@@ -75,7 +75,7 @@ describe "Polisher" do
                            :version_qualifier => '<',
                            :gem_version => 1.1
 
-      post '/gems/updated', :name => 'foobar', 
+      post '/gems/released', :name => 'foobar',
                             :version => '1.3', 
                             :gem_uri => 'http://gemcutter.org/gems/foobar-1.3.gem'
 
@@ -168,6 +168,43 @@ describe "Polisher" do
     last_request.url.should == "http://example.org/projects"
   end
 
+  # test triggering release event
+  it "should successfully post-process a released project" do
+      project   = Project.create :name => 'myproj'
+
+      event = Event.create :project => project,
+                           :process => "integration_test_handler3",
+                           :version_qualifier => '=',
+                           :gem_version => "5.6"
+
+      event = Event.create :project => project,
+                           :process => "integration_test_handler4",
+                           :version_qualifier => '>',
+                           :gem_version => "7.9"
+
+      post '/projects/released', :name => 'myproj',
+                                 :version => "5.6"
+
+      $integration_test_handler_flags.include?(3).should == true
+      $integration_test_handler_flags.include?(4).should == false
+  end
+
+  # test triggering release event
+  it "should successfully post-process a released project w/ request params" do
+      project   = Project.create :name => 'post-process-project2'
+
+      event = Event.create :project => project,
+                           :process => "integration_test_handler5",
+                           :version_qualifier => '=',
+                           :gem_version => "5.0"
+
+      post '/projects/released', :name => 'post-process-project2',
+                                 :version => "5.0",
+                                 :xver  => "5.0.2-122"
+
+      $integration_test_handler_flags.include?("xver5.0.2-122").should == true
+  end
+
   it "should allow project source creations" do
     project = Project.create! :name => "create-project_source-test1"
     lambda do
@@ -193,8 +230,8 @@ describe "Polisher" do
     last_request.url.should == "http://example.org/projects"
   end
 
-  it "shold allow event creations" do
-    gem = ManagedGem.create :name => "create-event-test-gem", :gem_source_id => 1
+  it "should allow gem event creations" do
+    gem = ManagedGem.create! :name => "create-event-test-gem", :gem_source_id => 1
     lambda do
       post '/events/create', :managed_gem_id => gem.id, 
                              :process => 'fooproc', 
@@ -202,9 +239,31 @@ describe "Polisher" do
                              :version_qualifier => ">",
                              :process_options => 'opts'
     end.should change(Event, :count).by(1)
+    Event.find(:first,
+               :conditions => ['managed_gem_id = ? AND process = ? AND gem_version = ? ' +
+                               'AND version_qualifier = ? AND process_options = ?',
+                               gem.id, 'fooproc', '1.0', '>', 'opts']).should_not be_nil
     follow_redirect!
     last_response.should be_ok
     last_request.url.should == "http://example.org/gems"
+  end
+
+  it "should allow project event creations" do
+    project = Project.create! :name => "create-event-test-project"
+    lambda do
+      post '/events/create', :project_id => project.id,
+                             :process => 'fooproc',
+                             :gem_version => '1.0',
+                             :version_qualifier => ">",
+                             :process_options => 'opts'
+    end.should change(Event, :count).by(1)
+    Event.find(:first,
+               :conditions => ['project_id = ? AND process = ? AND gem_version = ? ' +
+                               'AND version_qualifier = ? AND process_options = ?',
+                               project.id, 'fooproc', '1.0', '>', 'opts']).should_not be_nil
+    follow_redirect!
+    last_response.should be_ok
+    last_request.url.should == "http://example.org/projects"
   end
 
   it "should allow event deletions" do
@@ -223,10 +282,24 @@ end
 # prolly a better way todo this, but fine for now
 $integration_test_handler_flags = []
 
-def integration_test_handler1(gem)
+def integration_test_handler1(entity, process_options = [], optional_params = {})
   $integration_test_handler_flags << 1
 end
 
-def integration_test_handler2(gem)
+def integration_test_handler2(entity, process_options = [], optional_params = {})
   $integration_test_handler_flags << 2
+end
+
+def integration_test_handler3(entity, process_options = [], optional_params = {})
+  $integration_test_handler_flags << 3
+end
+
+def integration_test_handler4(entity, process_options = [], optional_params = {})
+  $integration_test_handler_flags << 4
+end
+
+def integration_test_handler5(entity, process_options = [], optional_params = {})
+  optional_params.each { |k,v|
+    $integration_test_handler_flags << "#{k}#{v}"
+  }
 end

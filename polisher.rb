@@ -75,7 +75,7 @@ delete '/gems/destroy/:id' do
   redirect '/gems'
 end
 
-post '/gems/updated' do
+post '/gems/released' do
   name    = params[:name]
   version = params[:version]
   source_uri = ManagedGem.uri_to_source_uri(params[:gem_uri]) 
@@ -134,6 +134,16 @@ delete '/projects/destroy/:id' do
   redirect '/projects'
 end
 
+post '/projects/released' do
+  name    = params[:name]
+  version = params[:version]
+  project = Project.find(:first, :conditions => ["name = ?", name])
+  events  = project.events.all.find_all { |event| event.applies_to_version?(version) }
+  events.each { |event| event.run(params) }
+
+  redirect '/gems'
+end
+
 ##################################################################### Project Sources
 
 post '/project_sources/create' do
@@ -149,14 +159,25 @@ end
 ##################################################################### Events
 
 post '/events/create' do
+  target_key = nil
+  target_obj = nil
+  if params.has_key?('managed_gem_id')
+    target_key = :managed_gem
+    target_obj = ManagedGem.find(params[:managed_gem_id])
+  elsif params.has_key?('project_id')
+    target_key = :project
+    target_obj = Project.find(params[:project_id])
+  end
+
   version = (params[:gem_version] != '*' ? params[:gem_version] : '')
-  @event = Event.new  :managed_gem  => ManagedGem.find(params[:managed_gem_id]),
+  @event = Event.new  target_key => target_obj,
                       :process => params[:process],
                       :gem_version => version,
                       :version_qualifier => params[:version_qualifier],
                       :process_options => params[:process_options]
   @event.save!
-  redirect '/gems'
+  redirect '/gems'     if target_key == :managed_gem
+  redirect '/projects' if target_key == :project
 end
 
 delete '/events/destroy/:id' do 
