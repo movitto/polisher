@@ -39,9 +39,7 @@ def create_package(entity, process_options = [''], optional_params = {})
 
      # coversion template to use, if not specified use gem2rpm default
      template = Gem2Rpm::TEMPLATE
-     File.open(ARTIFACTS_DIR + "/templates/#{template_file}", "rb") { |file|
-         template = file.read
-     } unless template_file == '' || template_file.nil?
+     template = File.read_all(template_file) unless template_file == '' || template_file.nil?
 
      # create rpm spec w/ gem2rpm
      Gem2Rpm::convert gem_file_path, template, sfh
@@ -54,19 +52,16 @@ def create_package(entity, process_options = [''], optional_params = {})
      # spec we are writing
      spec_file = ARTIFACTS_DIR + "/SPECS/#{entity.name}.spec"
 
+     # run through the optional params,
+     # setting local variables to be pulled into erb via binding below
+     params_s = ''
+     optional_params.each { |k,v| params_s += "#{k} = '#{v}' ; " }
+     eval params_s
+
      # take specified template_file and process it w/ erb,
      # TODO raise exception if we don't have a template
-     template = nil
-     File.open(template_file, "rb") { |file|
-       # run through the optional params,
-       # setting local variables to be pulled in via binding below
-       params_s = ''
-       optional_params.each { |k,v| params_s += "#{k} = '#{v}' ; " }
-       eval params_s
-
-       template = file.read
-       template = ERB.new(template, 0, '<>').result(binding)
-     }
+     template = File.read_all(template_file)
+     template = ERB.new(template, 0, '<>').result(binding)
 
      # write to spec_file
      File.write spec_file, template
@@ -100,7 +95,7 @@ def update_repo(entity, process_options, optional_params = {})
    # copy entity into repo/arch dir, creating it if it doesn't exist
    arch_dir = repo_dir + "/#{entity_arch}"
    Dir.mkdir arch_dir unless File.directory? arch_dir
-   File.open(arch_dir + "/#{entity_tgt_rpm}", 'wb') { |ofile| ofile.write entity_src_rpm.read }
+   File.write(arch_dir + "/#{entity_tgt_rpm}", entity_src_rpm.read)
 
    # run createrepo to finalize the repository
    system("createrepo #{repo_dir}")

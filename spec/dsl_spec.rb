@@ -71,6 +71,17 @@ describe "Polisher::DSL::ManagedGem" do
                                           should_not be_nil
    end
 
+   it "should allow gem deletion" do
+     db_gem = ManagedGem.create! :name => "gem-event-deletion-test", :gem_source_id => 1
+     gem = Polisher::ManagedGem.new :id => db_gem.id, :name => db_gem.name
+     lambda {
+       gem.delete
+     }.should change(ManagedGem, :count).by(-1)
+     lambda {
+       ManagedGem.find(db_gem.id)
+     }.should raise_error(ActiveRecord::RecordNotFound)
+   end
+
    it "should trigger update" do
       db_gem   = ManagedGem.create :name => 'dsl-trigger-test', :gem_source_id => 1
       event = Event.create :managed_gem => db_gem,
@@ -106,30 +117,39 @@ describe "Polisher::DSL::Project" do
      project.sources[1].should == "uuu2"
    end
 
-   # FIXME uncomment
-   #it "should allow event creations" do
-   #  db_project = Project.create! :name => "project-event-creation-test"
-   #  project    = Polisher::Project.new :id => db_project.id, :name => db_project.name
-   #  lambda {
-   #    project.on_version "<", "3.9", "do something", "options"
-   #  }.should change(Event, :count).by(1)
-   #  Event.find(:first, :conditions => [ 'project_id = ? AND version_qualifier = ? AND version = ? AND process = ? AND process_options = ?',
-   #                                       project.id, "<", "3.9", "do something", "options" ]).
-   #                                       should_not be_nil
-   #end
+   it "should allow project deletion" do
+     db_project = Project.create! :name => "project-event-deletion-test"
+     project = Polisher::Project.new :id => db_project.id, :name => db_project.name
+     lambda {
+       project.delete
+     }.should change(Project, :count).by(-1)
+     lambda {
+       Project.find(db_project.id)
+     }.should raise_error(ActiveRecord::RecordNotFound)
+   end
 
-   # FIXME uncomment
-   #it "should trigger release" do
-   #   db_project   = Project.create :name => 'dsl-trigger-test'
-   #   event = Event.create :project => db_project,
-   #                        :process => "integration_test_handler2",
-   #                        :version_qualifier => '<',
-   #                        :gem_version => 1.0
+   it "should allow event creations" do
+     db_project = Project.create! :name => "project-event-creation-test"
+     project    = Polisher::Project.new :id => db_project.id, :name => db_project.name
+     lambda {
+       project.on_version "<", "3.9", "do something", "options"
+     }.should change(Event, :count).by(1)
+     Event.find(:first, :conditions => [ 'project_id = ? AND version_qualifier = ? AND gem_version = ? AND process = ? AND process_options = ?',
+                                          project.id, "<", "3.9", "do something", "options" ]).
+                                          should_not be_nil
+   end
 
-   #   project = Polisher::Project.new :id => db_project.id, :name => db_project.name
-   #   project.released 0.9
-   #   $integration_test_handler_flags.include?(2).should == true
-   #end
+   it "should trigger release" do
+      db_project   = Project.create :name => 'dsl-trigger-test'
+      event = Event.create :project => db_project,
+                           :process => "integration_test_handler2",
+                           :version_qualifier => '<',
+                           :gem_version => 1.0
+
+      project = Polisher::Project.new :id => db_project.id, :name => db_project.name
+      project.released 0.9
+      $integration_test_handler_flags.include?(2).should == true
+   end
 end
 
 

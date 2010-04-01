@@ -51,7 +51,7 @@ describe "Polisher::EventHandlers" do
 
   it "should correctly create gem package using template" do
     File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_TEST_TEMPLATE)
-    create_package(@gem, ['/polisher.spec.tpl'])
+    create_package(@gem, [ARTIFACTS_DIR + '/templates/polisher.spec.tpl'])
     File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
     File.read_all(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should =~ /.*by polisher.*/
   end

@@ -51,6 +51,11 @@ class ManagedGem
                     :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
    end
 
+   # Delete managed gem
+   def delete
+     RestClient.delete("#{$polisher_uri}/gems/destroy/#{id}"){ |response| }
+   end
+
    # Test fire gem released event for specified version
    def released(version)
      RestClient.post("#{$polisher_uri}/gems/released",
@@ -111,10 +116,15 @@ class Project
   end
 
   # Create new Event w/ the specified version qualifier, version, process, and process optiosn
-  def on_version(version_qualifier, version, process, proces_options = [])
+  def on_version(version_qualifier, version, process, process_options = [])
     RestClient.post("#{$polisher_uri}/events/create", 
                    :project_id => id, :process => process, :gem_version => version,
                    :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
+  end
+
+  # Delete project
+  def delete
+    RestClient.delete("#{$polisher_uri}/projects/destroy/#{id}") { |response| }
   end
 
   # Add new Project source w/ specified uri
