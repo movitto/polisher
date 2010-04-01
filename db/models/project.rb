@@ -21,7 +21,6 @@ class Project < ActiveRecord::Base
 
   # Download all project sources to specified :dir
   def download_to(args = {})
-    dir  = args.has_key?(:dir)  ? args[:dir]  : nil
-    sources.each { |source| source.download_to :dir => dir }
+    sources.each { |source| source.download_to args }
   end
 end

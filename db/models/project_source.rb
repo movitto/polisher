@@ -18,15 +18,22 @@ class ProjectSource < ActiveRecord::Base
 
   validates_uniqueness_of :uri, :scope => :project_id
 
-  # Download all project sources to specified :path or :dir
+  # Download all project sources to specified :path or :dir. Return path which file was downloaded to
    def download_to(args = {})
      path = args.has_key?(:path) ? args[:path] : nil
      dir  = args.has_key?(:dir)  ? args[:dir]  : nil
+     variables = args.has_key?(:variables) ? args[:variables] : []
 
-     urio = URI::parse(uri)
+     # swap in any specified variables into uri
+     turi = uri
+     variables.each { |k,v| turi.gsub!("%{#{k}}", v.to_s) }
+
+     # generate path which to d/l the file to
+     urio = URI::parse(turi)
      path = dir + "/" + urio.path.split('/').last if path.nil?
 
-     curl = Curl::Easy.new(uri)
+     # d/l the file
+     curl = Curl::Easy.new(turi)
      curl.follow_location = true # follow redirects
      curl.perform
      File.write path, curl.body_str

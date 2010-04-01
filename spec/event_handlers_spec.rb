@@ -31,9 +31,16 @@ describe "Polisher::EventHandlers" do
      unless defined? @gem
        @gem = ManagedGem.create :name => 'polisher', :gem_source_id => 1
      end
+
+     unless defined? @project
+       @project = Project.create :name => 'ruby-activerecord'
+       @project.project_sources << ProjectSource.create(:project => @project,
+             :uri     => 'http://rubyforge.org/frs/download.php/28874/activerecord-%{version}.tgz')
+
+     end
   end
 
-  it "should correctly create package" do
+  it "should correctly create gem package" do
      create_package(@gem)
      File.exists?(ARTIFACTS_DIR + '/gems/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
@@ -42,19 +49,37 @@ describe "Polisher::EventHandlers" do
      File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
   end
 
-  it "should correctly create package using template" do
+  it "should correctly create gem package using template" do
     File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_TEST_TEMPLATE)
     create_package(@gem, ['/polisher.spec.tpl'])
     File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
     File.read_all(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should =~ /.*by polisher.*/
   end
 
+  it "should correctly create project package" do
+    template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
+    File.write(template, POLISHER_PROJECTS_TEST_TEMPLATE)
+    create_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
+
+    File.exists?(ARTIFACTS_DIR + '/SOURCES/activerecord-2.0.1.tgz').should == true
+    File.exists?(ARTIFACTS_DIR + '/SPECS/ruby-activerecord.spec').should == true
+    File.exists?(ARTIFACTS_DIR + "/SRPMS/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.src.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+  end
+
   it "should correctly update repository" do
      create_package(@gem)
      update_repo(@gem, ['fedora-ruby'])
+
+     template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
+     File.write(template, POLISHER_PROJECTS_TEST_TEMPLATE)
+     create_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
+     update_repo(@project, ['fedora-ruby'])
+
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch').should == true
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch/rubygem-polisher.rpm').should == true
+     File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch/ruby-activerecord.rpm').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/repomd.xml').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/primary.xml.gz').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/other.xml.gz').should == true
@@ -161,4 +186,70 @@ rm -rf %{buildroot}
 %changelog
 * <%= Time.now.strftime("%a %b %d %Y") %> <%= packager %> - <%= spec.version %>-1
 - Initial package
+}
+
+# copied w/ changes from http://cvs.fedoraproject.org/viewvc/rpms/ruby-activerecord/F-13/ruby-activerecord.spec?revision=1.6&view=co
+POLISHER_PROJECTS_TEST_TEMPLATE =
+%q{
+%{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig -e "puts Config::CONFIG['sitelibdir']")}
+%define rname activerecord
+# Only run the tests on distros that have sqlite3
+%define with_check 0
+
+Name:           ruby-%{rname}
+Version:        <%= version %>
+Release:        <%= release %>%{?dist}
+Summary:        Implements the ActiveRecord pattern for ORM
+
+Group:          Development/Languages
+
+License:        MIT
+URL:            http://rubyforge.org/projects/activerecord/
+Source0:        http://rubyforge.org/frs/download.php/28874/activerecord-%{version}.tgz
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildArch:      noarch
+BuildRequires:  ruby >= 1.8
+%if %with_check
+BuildRequires:  ruby(active_support) = 2.0.1
+BuildRequires:  ruby(sqlite3)
+%endif
+Requires:       ruby(abi) = 1.8
+Requires:       ruby(active_support) = 2.0.1
+Provides:       ruby(active_record) = %{version}
+
+%description
+Implements the ActiveRecord pattern (Fowler, PoEAA) for ORM. It ties
+database tables and classes together for business objects, like Customer or
+Subscription, that can find, save, and destroy themselves without resorting
+to manual SQL.
+
+
+%prep
+%setup -q -n %{rname}-%{version}
+chmod 0644 README
+
+%build
+
+%install
+rm -rf $RPM_BUILD_ROOT
+install -d $RPM_BUILD_ROOT/%{ruby_sitelib}/
+cp -pr lib/* $RPM_BUILD_ROOT/%{ruby_sitelib}/
+find $RPM_BUILD_ROOT/%{ruby_sitelib} -type f | xargs chmod a-x
+
+%check
+%if %with_check
+cd test
+ruby -I "connections/native_sqlite3" base_test.rb
+%endif
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%{ruby_sitelib}/activerecord.rb
+%{ruby_sitelib}/active_record.rb
+%{ruby_sitelib}/active_record
+%doc README CHANGELOG examples/
 }

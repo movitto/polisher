@@ -17,66 +17,90 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
+require 'erb'
 require 'gem2rpm'
 require 'net/smtp'
 
-# Convert gem into another package format.
-# Right now uses gem2rpm to create rpm spec, taking optional template file name
-# TODO extend/modify to support any other output package format
-# TODO add support for creating project package (manaully subin params to source uri's and process ERB template like gem2rpm), add optional params here
+# Convert entity (gem, project) into another package format.
+# TODO rename to create_rpm_package
 def create_package(entity, process_options = [''], optional_params = {})
-   gem = entity
    template_file = process_options[0]
+   spec_file = nil
 
-   # d/l gem into artifacts/gems dir, link it into the artifacts/SOURCES dir
-   gem_file_path = gem.download_to :dir => ARTIFACTS_DIR + "/gems"
-   gem_file = gem_file_path.split('/').last
-   File.symlink gem_file_path, ARTIFACTS_DIR + "/SOURCES/" + gem_file
+   if entity.class == ManagedGem
+     # d/l gem into artifacts/gems dir, link it into the artifacts/SOURCES dir
+     gem_file_path = entity.download_to :dir => ARTIFACTS_DIR + "/gems"
+     gem_file = gem_file_path.split('/').last
+     File.symlink gem_file_path, ARTIFACTS_DIR + "/SOURCES/" + gem_file
 
-   # spec we are writing
-   spec_file = ARTIFACTS_DIR + "/SPECS/rubygem-#{gem.name}.spec"
-   sfh   = File.open(spec_file, "wb")
+     # spec we are writing
+     spec_file = ARTIFACTS_DIR + "/SPECS/rubygem-#{entity.name}.spec"
+     sfh   = File.open(spec_file, "wb")
 
-   # coversion template to use, if not specified use gem2rpm default
-   template = Gem2Rpm::TEMPLATE
-   File.open(ARTIFACTS_DIR + "/templates/#{template_file}", "rb") { |file| 
-       template = file.read 
-   } unless template_file == '' || template_file.nil?
+     # coversion template to use, if not specified use gem2rpm default
+     template = Gem2Rpm::TEMPLATE
+     File.open(ARTIFACTS_DIR + "/templates/#{template_file}", "rb") { |file|
+         template = file.read
+     } unless template_file == '' || template_file.nil?
 
-   # create rpm spec w/ gem2rpm
-   Gem2Rpm::convert gem_file_path, template, sfh
-   sfh.close
+     # create rpm spec w/ gem2rpm
+     Gem2Rpm::convert gem_file_path, template, sfh
+     sfh.close
+
+   elsif entity.class == Project
+     # d/l projects sources into artifacts/SOURCES dir
+     entity.download_to :dir => ARTIFACTS_DIR + "/SOURCES", :variables => optional_params
+
+     # spec we are writing
+     spec_file = ARTIFACTS_DIR + "/SPECS/#{entity.name}.spec"
+
+     # take specified template_file and process it w/ erb,
+     # TODO raise exception if we don't have a template
+     template = nil
+     File.open(template_file, "rb") { |file|
+       # run through the optional params,
+       # setting local variables to be pulled in via binding below
+       params_s = ''
+       optional_params.each { |k,v| params_s += "#{k} = '#{v}' ; " }
+       eval params_s
+
+       template = file.read
+       template = ERB.new(template, 0, '<>').result(binding)
+     }
+
+     # write to spec_file
+     File.write spec_file, template
+   end
 
    # run rpmbuild on spec
    system("rpmbuild --define '_topdir #{ARTIFACTS_DIR}' -ba #{spec_file}")
 end
 
-# Update specified repository w/ latest gem artifact.
-# Right now updates specified yum repo w/ newly created gem rpm
-# TODO extend/modify to support other repository formats
-# TODO add support for adding project packages to repo
+# Update specified repository w/ latest entity (gem, project) artifact.
+# TODO rename to update_yum_repo
 def update_repo(entity, process_options, optional_params = {})
-   gem = entity
    repository = process_options[0]
 
    # create the repository dir if it doesn't exist
    repo_dir = ARTIFACTS_DIR + "/repos/#{repository}"
    Dir.mkdir repo_dir unless File.directory? repo_dir
 
+   prefix = entity.class == ManagedGem ? 'rubygem-' : ''
    # get the latest built rpm that matches gem name 
    # FIXME need to incorporate version
-   gem_file = Dir[ARTIFACTS_DIR + "/RPMS/*/rubygem-#{gem.name}-*.rpm"].
+   entity_src_rpm = Dir[ARTIFACTS_DIR + "/RPMS/*/#{prefix}#{entity.name}-*.rpm"].
                              collect { |fn| File.new(fn) }.
                              sort { |f1,f2| file1.mtime <=> file2.mtime }.last
+   entity_tgt_rpm = "#{prefix}#{entity.name}.rpm"
 
-   # grab the architecture from the directory the file resides in  
-   arch = gem_file.path.split('.')
-   arch = arch[arch.size-2]
+   # grab the architecture from the directory the src file resides in
+   entity_arch = entity_src_rpm.path.split('.')
+   entity_arch = entity_arch[entity_arch.size-2]
 
-   # copy gem into repo/arch dir, creating it if it doesn't exist
-   arch_dir = repo_dir + "/#{arch}" 
+   # copy entity into repo/arch dir, creating it if it doesn't exist
+   arch_dir = repo_dir + "/#{entity_arch}"
    Dir.mkdir arch_dir unless File.directory? arch_dir
-   File.open(arch_dir + "/rubygem-#{gem.name}.rpm", 'wb') { |ofile| ofile.write gem_file.read }
+   File.open(arch_dir + "/#{entity_tgt_rpm}", 'wb') { |ofile| ofile.write entity_src_rpm.read }
 
    # run createrepo to finalize the repository
    system("createrepo #{repo_dir}")

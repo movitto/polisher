@@ -150,6 +150,23 @@ describe "Polisher::ProjectSource" do
      source.download_to(:path => ARTIFACTS_DIR + '/joni.spec')
      File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
   end
+
+  it "should permit a parameterized download" do
+     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+     FileUtils.mkdir_p(ARTIFACTS_DIR)
+
+     project = Project.create!(:name => 'project-source-param-download-test')
+     source = ProjectSource.create!(
+        :uri => 'http://mo.morsi.org/files/%{group}/%{name}.spec',
+        :project => project)
+     path = source.download_to(:dir => ARTIFACTS_DIR, :variables => {:group => "jruby", :name => "joni"})
+     File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
+     FileUtils.rm(ARTIFACTS_DIR + '/joni.spec')
+     path.should == ARTIFACTS_DIR + '/joni.spec'
+
+     source.download_to(:path => ARTIFACTS_DIR + '/joni.spec')
+     File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
+  end
 end
 
 describe "Polisher::Event" do
@@ -201,15 +218,19 @@ describe "Polisher::Event" do
    it "should correctly resolve version qualifiers" do
       event = Event.new :version_qualifier => nil
       event.applies_to_version?('1.1').should be(true)
+      event.applies_to_version?('1.5.3').should be(true)
 
       event = Event.new :version_qualifier => "=", :gem_version => "5.3"
       event.applies_to_version?('1.2').should be(false)
       event.applies_to_version?('5.3').should be(true)
+      event.applies_to_version?('5.3.0').should be(false)
+      event.applies_to_version?('5.3.1').should be(false)
       event.applies_to_version?('7.9').should be(false)
 
-      event = Event.new :version_qualifier => ">", :gem_version => "1.9"
-      event.applies_to_version?('1.8').should be(false)
-      event.applies_to_version?('1.9').should be(false)
+      event = Event.new :version_qualifier => ">", :gem_version => "1.9.2"
+      event.applies_to_version?('1.8.1').should be(false)
+      event.applies_to_version?('1.9.1').should be(false)
+      event.applies_to_version?('1.9.3').should be(true)
       event.applies_to_version?('2.0').should be(true)
 
       event = Event.new :version_qualifier => "<", :gem_version => "0.6"
@@ -222,10 +243,11 @@ describe "Polisher::Event" do
       event.applies_to_version?('1.9').should be(true)
       event.applies_to_version?('2.0').should be(true)
 
-      event = Event.new :version_qualifier => "<=", :gem_version => "0.6"
-      event.applies_to_version?('0.5').should be(true)
-      event.applies_to_version?('0.6').should be(true)
-      event.applies_to_version?('0.7').should be(false)
+      event = Event.new :version_qualifier => "<=", :gem_version => "0.6.4"
+      event.applies_to_version?('0.5.2').should be(true)
+      event.applies_to_version?('0.6.1').should be(true)
+      event.applies_to_version?('0.6.6').should be(false)
+      event.applies_to_version?('0.7.4').should be(false)
    end
 
    it "should successfully run event process" do
