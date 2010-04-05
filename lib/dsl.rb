@@ -108,8 +108,8 @@ class Project
     project.id   = xml.children.find { |c| c.name == "id" }.content.to_i
     project.name = xml.children.find { |c| c.name == "name" }.content.strip
     xml.children.find     { |c| c.name == "sources" }.children.each  { |c|
-       uri = c.children.find { |c| c.name == "uri"}.content.strip
-       project.sources  << uri unless uri.nil?
+       uri = c.children.find { |c| c.name == "uri"}
+       project.sources  << uri.content.strip unless uri.nil?
     }
 
     return project
@@ -224,10 +224,10 @@ end
 
 # Find or create new project w/ specified args
 def project(args = {})
-  project.each { |project|
+  projects.each { |project|
     project = nil if (args.has_key?(:name) && args[:name] != project.name) ||
                      (args.has_key?(:id)   && args[:id]   != project.id)
-    unless project.nil
+    unless project.nil?
       yield project if block_given?
       return project 
     end

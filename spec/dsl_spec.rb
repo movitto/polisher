@@ -173,7 +173,7 @@ describe "Polisher::DSL" do
 
     lambda {
       test_gem = gem :name => "dsl-gem-test", :gem_source_id => 1
-    }.should_not change(ManagedGem, :count).by(1)
+    }.should_not change(ManagedGem, :count)
     test_gem.id.should == db_gem.id
 
     test_gem = gem :name => "dsl-gem-test"
@@ -208,7 +208,28 @@ describe "Polisher::DSL" do
     test_source.id.should == db_source.id
   end
 
-  # FIXME test projects, project
+  it "should return all projects" do
+      proj1   = Project.create! :name => 'dsl-projects-test1'
+      proj2   = Project.create! :name => 'dsl-projects-test2'
+      test_projects = projects
+      Project.find(:all).each { |proj|
+        test_projects.find { |p| p.name == proj1.name }.should_not be_nil
+      }
+  end
+
+  it "should find or create project" do
+    test_project = nil
+    lambda {
+      test_project = project :name => "dsl-project-test"
+    }.should change(Project, :count).by(1)
+    db_project = Project.find(:first, :conditions => ['name = ?', 'dsl-project-test'])
+    test_project.id.should == db_project.id
+
+    lambda {
+      test_project = project :name => "dsl-project-test"
+    }.should_not change(Project, :count)
+    test_project.id.should == db_project.id
+  end
 end
 
 # prolly a better way todo this, but fine for now

@@ -64,6 +64,7 @@ get '/gems.xml' do
 end
 
 post '/gems/create' do
+  # FIXME throw exception if params[:gem_source_id].nil?
   @gem = ManagedGem.new :name => params[:name], :gem_source_id => params[:gem_source_id]
   @gem.save!
   @gem.subscribe
