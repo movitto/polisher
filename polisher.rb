@@ -84,7 +84,7 @@ post '/gems/released' do
   source = GemSource.find(:first, :conditions => ["uri = ?", source_uri])
   gem    = source.gems.all.find { |gem| gem.name == name }
   events = gem.events.all.find_all { |event| event.applies_to_version?(version) }
-  events.each { |event| event.run }
+  events.each { |event| event.run(params) }
 
   redirect '/gems'
 end

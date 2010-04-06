@@ -31,7 +31,7 @@ def create_package(entity, process_options = [''], optional_params = {})
 
    if entity.class == ManagedGem
      # d/l gem into artifacts/gems dir, link it into the artifacts/SOURCES dir
-     gem_file_path = File.expand_path(entity.download_to(:dir => ARTIFACTS_DIR + "/gems"))
+     gem_file_path = File.expand_path(entity.download_to(:dir => ARTIFACTS_DIR + "/gems", :version => optional_params[:version]))
      gem_file = gem_file_path.split('/').last
      link_file = ARTIFACTS_DIR + '/SOURCES/' + gem_file
      FileUtils.rm_f(link_file) if File.symlink?(link_file)
@@ -79,6 +79,7 @@ end
 # TODO rename to update_yum_repo
 def update_repo(entity, process_options, optional_params = {})
    repository = process_options[0]
+   version = optional_params[:version]
 
    # create the repository dir if it doesn't exist
    repo_dir = ARTIFACTS_DIR + "/repos/#{repository}"
@@ -86,8 +87,7 @@ def update_repo(entity, process_options, optional_params = {})
 
    prefix = entity.class == ManagedGem ? 'rubygem-' : ''
    # get the latest built rpm that matches gem name 
-   # FIXME need to incorporate version
-   entity_src_rpm = Dir[ARTIFACTS_DIR + "/RPMS/*/#{prefix}#{entity.name}-*.rpm"].
+   entity_src_rpm = Dir[ARTIFACTS_DIR + "/RPMS/*/#{prefix}#{entity.name}-#{version}*.rpm"].
                              collect { |fn| File.new(fn) }.
                              sort { |f1,f2| file1.mtime <=> file2.mtime }.last
    entity_tgt_rpm = "#{prefix}#{entity.name}.rpm"

@@ -90,10 +90,15 @@ class ManagedGem < ActiveRecord::Base
      path = args.has_key?(:path) ? args[:path] : nil
      dir  = args.has_key?(:dir)  ? args[:dir]  : nil
      version = args.has_key?(:version) ? args[:version]  : nil
+     gem_uri = nil
 
-     info = get_info
-     gem_uri = info["gem_uri"]
-     version = info["version"] if version.nil?
+     if version.nil?
+       info = get_info
+       gem_uri = info["gem_uri"]
+       version = info["version"]
+     else
+       gem_uri = source.uri + "/gems/#{name}-#{version}.gem"
+     end
      path = dir + "/#{name}-#{version}.gem" if path.nil?
 
      curl = Curl::Easy.new(gem_uri)

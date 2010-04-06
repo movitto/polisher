@@ -49,7 +49,10 @@ class Event < ActiveRecord::Base
 
    # determine if event applies to specified version
    def applies_to_version?(version)
-     # TODO this will evaluate to false "1.1" = "1.1.0" here, is this correct?, what about other version schemes (beta, patch# etc)
+     # XXX remove any non-numeric chars from the version number (eg if a version has a '-beta' or whatnot, not pretty but works for now
+     version.gsub(/[a-zA-Z]*/, '')
+
+     # TODO this will evaluate to false "1.1" = "1.1.0" here, is this correct? (implement this in a more robust way)
      gv, ev = version, gem_version
      return (["", nil].include? version_qualifier ) ||
             (version_qualifier == "="  && gv == ev) ||
