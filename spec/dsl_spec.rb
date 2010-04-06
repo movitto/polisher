@@ -67,7 +67,7 @@ describe "Polisher::DSL::ManagedGem" do
        gem.on_version ">=", "5.2", "do something", "options"
      }.should change(Event, :count).by(1)
      Event.find(:first, :conditions => [ 'managed_gem_id = ? AND version_qualifier = ? AND gem_version = ? AND process = ? AND process_options = ?',
-                                          gem.id, ">=", "5.2", "do something", "options" ]).
+                                          gem.id, ">=", "5.2", "do_something", "options" ]).
                                           should_not be_nil
    end
 
@@ -135,7 +135,7 @@ describe "Polisher::DSL::Project" do
        project.on_version "<", "3.9", "do something", "options"
      }.should change(Event, :count).by(1)
      Event.find(:first, :conditions => [ 'project_id = ? AND version_qualifier = ? AND gem_version = ? AND process = ? AND process_options = ?',
-                                          project.id, "<", "3.9", "do something", "options" ]).
+                                          project.id, "<", "3.9", "do_something", "options" ]).
                                           should_not be_nil
    end
 

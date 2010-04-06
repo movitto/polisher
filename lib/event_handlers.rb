@@ -21,6 +21,8 @@ require 'erb'
 require 'gem2rpm'
 require 'net/smtp'
 
+module EventHandlers
+
 # Convert entity (gem, project) into another package format.
 # TODO rename to create_rpm_package
 def create_package(entity, process_options = [''], optional_params = {})
@@ -29,9 +31,11 @@ def create_package(entity, process_options = [''], optional_params = {})
 
    if entity.class == ManagedGem
      # d/l gem into artifacts/gems dir, link it into the artifacts/SOURCES dir
-     gem_file_path = entity.download_to :dir => ARTIFACTS_DIR + "/gems"
+     gem_file_path = File.expand_path(entity.download_to(:dir => ARTIFACTS_DIR + "/gems"))
      gem_file = gem_file_path.split('/').last
-     File.symlink gem_file_path, ARTIFACTS_DIR + "/SOURCES/" + gem_file
+     link_file = ARTIFACTS_DIR + '/SOURCES/' + gem_file
+     FileUtils.rm_f(link_file) if File.symlink?(link_file)
+     File.symlink gem_file_path, link_file
 
      # spec we are writing
      spec_file = ARTIFACTS_DIR + "/SPECS/rubygem-#{entity.name}.spec"
@@ -131,3 +135,5 @@ END_OF_MESSAGE
        smtp.send_message msg, from, to
    end 
 end
+
+end #module EventHandlers

@@ -20,7 +20,6 @@ require 'fileutils'
 
 # lib/ modules
 require 'common'
-require 'event_handlers'
 require 'sinatra/url_for'
 
 # db modules
@@ -29,7 +28,7 @@ require 'db/connection'
 ##################################################################### Config
 
 # dir which generated artifacts reside
-ARTIFACTS_DIR = Sinatra::Application.artifacts_dir
+ARTIFACTS_DIR = File.expand_path(Sinatra::Application.artifacts_dir)
 
 create_missing_polisher_dirs(:artifacts_dir => ARTIFACTS_DIR, :db_data_dir => Sinatra::Application.db_data_dir, :log_dir => Sinatra::Application.log_dir)
 
@@ -64,10 +63,11 @@ get '/gems.xml' do
 end
 
 post '/gems/create' do
-  # FIXME throw exception if params[:gem_source_id].nil?
-  @gem = ManagedGem.new :name => params[:name], :gem_source_id => params[:gem_source_id]
-  @gem.save!
-  @gem.subscribe
+  unless params[:name].nil? || params[:gem_source_id].nil? || params[:name] == "" || params[:gem_source_id] == ""
+    @gem = ManagedGem.new :name => params[:name], :gem_source_id => params[:gem_source_id]
+    @gem.save!
+    @gem.subscribe
+  end
   redirect '/gems'
 end
 
@@ -170,11 +170,12 @@ post '/events/create' do
     target_obj = Project.find(params[:project_id])
   end
 
-  version = (params[:gem_version] != '*' ? params[:gem_version] : '')
+  version           = (params[:gem_version]       != '*' ? params[:gem_version]        : nil)
+  version_qualifier = (params[:version_qualifier] != ''  ? params[:version_qualifier] : nil)
   @event = Event.new  target_key => target_obj,
                       :process => params[:process],
                       :gem_version => version,
-                      :version_qualifier => params[:version_qualifier],
+                      :version_qualifier => version_qualifier,
                       :process_options => params[:process_options]
   @event.save!
   redirect '/gems'     if target_key == :managed_gem

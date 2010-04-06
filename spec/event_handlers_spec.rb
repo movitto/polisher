@@ -18,7 +18,9 @@ require File.dirname(__FILE__) + '/spec_helper'
 
 BUILD_VERSION='fc11'
 
-describe "Polisher::EventHandlers" do
+include EventHandlers
+
+describe "EventHandlers" do
  
   before(:each) do
      FileUtils.rm_rf(ARTIFACTS_DIR)

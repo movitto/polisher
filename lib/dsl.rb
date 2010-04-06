@@ -45,7 +45,15 @@ class ManagedGem
    end
 
    # Create new Event w/ the specified version qualifier, version, process, and process optiosn
-   def on_version(version_qualifier, version, process, process_options = [])
+   def on_version(*args)
+     args.unshift nil if args.size == 3
+     version_qualifier = args[0]
+     version           = args[1]
+     process           = args[2]
+     process_options   = args[3]
+
+     process.gsub!(/\s/, '_')
+
      RestClient.post("#{$polisher_uri}/events/create", 
                     :managed_gem_id => id, :process => process, :gem_version => version,
                     :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
@@ -116,7 +124,15 @@ class Project
   end
 
   # Create new Event w/ the specified version qualifier, version, process, and process optiosn
-  def on_version(version_qualifier, version, process, process_options = [])
+  def on_version(*args)
+    args.unshift nil if args.size == 3
+    version_qualifier = args[0]
+    version           = args[1]
+    process           = args[2]
+    process_options   = args[3]
+
+    process.gsub!(/\s/, '_')
+
     RestClient.post("#{$polisher_uri}/events/create", 
                    :project_id => id, :process => process, :gem_version => version,
                    :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
@@ -134,9 +150,9 @@ class Project
   end
 
   # Test fire project released event for specified version
-  def released(version)
-     RestClient.post("#{$polisher_uri}/projects/released",
-                    :name    => name, :version => version ) { |response| }
+  def released(version, params = {})
+     rparams = { :name => name, :version => version}.merge!(params)
+     RestClient.post("#{$polisher_uri}/projects/released", rparams ) { |response| }
   end
 end
 
@@ -172,7 +188,10 @@ def gem(args = {})
       return gem
     end
   }
-  args[:gem_source_id] = sources.find { |s| s.name == args[:source] }.id
+  src = sources.find { |s| s.name == args[:source] }
+  return nil if src.nil? || args[:name].nil?
+  args[:gem_source_id] = src.id
+
   RestClient.post("#{$polisher_uri}/gems/create", args) { |response| }
   gem = gem(args)
   yield gem if block_given?

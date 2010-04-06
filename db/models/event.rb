@@ -10,7 +10,11 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
+require 'lib/event_handlers'
+
 class Event < ActiveRecord::Base
+   include EventHandlers
+
    belongs_to :managed_gem
    alias :gem :managed_gem
 
