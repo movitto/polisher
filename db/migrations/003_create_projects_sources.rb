@@ -10,18 +10,15 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-class CreateGemSources < ActiveRecord::Migration
+class CreateProjectsSources < ActiveRecord::Migration
   def self.up
-    create_table :gem_sources do |t|
-      t.string :name
-      t.string :uri
+    create_table :projects_sources do |t|
+      t.references    :project
+      t.references    :source
     end
-
-    # create entry for the official gemcutter repo
-    GemSource.create :name => "gemcutter", :uri => "http://gemcutter.org"
   end
 
   def self.down
-    drop_table :gem_sources
+    drop_table :projects_sources
   end
 end

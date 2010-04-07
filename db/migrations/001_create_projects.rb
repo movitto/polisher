@@ -15,18 +15,9 @@ class CreateProjects < ActiveRecord::Migration
     create_table :projects do |t|
       t.string :name
     end
-
-    create_table :project_sources do |t|
-      t.string :uri
-      t.references    :project
-    end
-
-    add_column :events, :project_id, :integer
   end
 
   def self.down
-    remove_column :events, :project_id
-    drop_table :project_sources
     drop_table :projects
   end
 end

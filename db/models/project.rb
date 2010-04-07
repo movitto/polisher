@@ -11,12 +11,10 @@
 # <http://www.gnu.org/licenses/>
 
 class Project < ActiveRecord::Base
-  has_many :project_sources
-  alias :sources :project_sources
-
+  has_and_belongs_to_many :sources
   has_many :events
 
-  validates_presence_of :name
+  validates_presence_of   :name
   validates_uniqueness_of :name
 
   # Download all project sources to specified :dir

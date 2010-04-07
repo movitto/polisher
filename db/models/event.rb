@@ -15,16 +15,10 @@ require 'lib/event_handlers'
 class Event < ActiveRecord::Base
    include EventHandlers
 
-   belongs_to :managed_gem
-   alias :gem :managed_gem
-
    belongs_to :project
 
-   validates_presence_of   :process
-
-   validates_presence_of :managed_gem_id, :if => Proc.new { |e| e.project_id.nil? }
-   validates_presence_of :project_id, :if => Proc.new { |e| e.managed_gem_id.nil? }
-   # TODO also need the XOR condition, eg both can't be set at the same time
+   validates_presence_of :project_id
+   validates_presence_of :process
 
    # TODO right mow just returning a fixed list, at some point dynamically generate
    def self.processes
@@ -40,22 +34,21 @@ class Event < ActiveRecord::Base
    validates_inclusion_of :version_qualifier, :in => VERSION_QUALIFIERS, 
                           :if => Proc.new { |e| !e.version_qualifier.nil? }
 
-   # TODO change name of this column to 'version'
-   validates_presence_of :gem_version,
+   validates_presence_of :version,
                          :if => Proc.new { |e| !e.version_qualifier.nil? }
 
    validates_presence_of :version_qualifier,
-                         :if => Proc.new { |e| !e.gem_version.nil? }
+                         :if => Proc.new { |e| !e.version.nil? }
 
    # determine if event applies to specified version
-   def applies_to_version?(version)
-     raise ArgumentError, "valid event version #{gem_version} and version #{version} required" unless gem_version.class == String && version.class == String
+   def applies_to_version?(cversion)
+     raise ArgumentError, "valid event version #{version} and version #{cversion} required" unless version.class == String && cversion.class == String
 
      # XXX remove any non-numeric chars from the version number (eg if a version has a '-beta' or whatnot, not pretty but works for now
-     version.gsub(/[a-zA-Z]*/, '')
+     cversion.gsub(/[a-zA-Z]*/, '')
 
      # TODO this will evaluate to false "1.1" = "1.1.0" here, is this correct? (implement this in a more robust way, eg split version into array around delims, compare each array elements w/ special case handling)
-     gv, ev = version, gem_version
+     gv, ev = cversion, version
      return (["", nil].include? version_qualifier ) ||
             (version_qualifier == "="  && gv == ev) ||
             (version_qualifier == ">"  && gv >  ev) ||
@@ -74,11 +67,8 @@ class Event < ActiveRecord::Base
         raise ArgumentError, "could not find event handler #{process}"
       end
 
-      entity = gem
-      entity = project if entity.nil?
-
-      # generate array of event params from gem/project, semi-colon seperated process options, and options params
-      event_params  = [entity, (process_options.nil? ? [] : process_options.split(';')), params]
+      # generate array of event params from project, semi-colon seperated process options, and options params
+      event_params  = [project, (process_options.nil? ? [] : process_options.split(';')), params]
 
       begin
         # invoke

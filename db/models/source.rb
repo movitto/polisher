@@ -10,19 +10,31 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-class ProjectSource < ActiveRecord::Base
-  belongs_to :project
+require 'curl' # requires 'curb' package
 
-  validates_presence_of :project_id
-  validates_presence_of :uri
+class Source < ActiveRecord::Base
+  has_and_belongs_to_many :projects
 
-  validates_uniqueness_of :uri, :scope => :project_id
+  validates_presence_of   :name
+  validates_uniqueness_of :name
+  validates_presence_of   :source_type
+  validates_presence_of   :uri
+  validates_uniqueness_of :uri
 
-  # Download all project sources to specified :path or :dir. Return path which file was downloaded to
+  SOURCE_TYPES = ['file', 'gem', 'git_repo']
+
+  validates_inclusion_of :source_type, :in => SOURCE_TYPES
+
+  # Download source, args may contain any of the following
+  # * :path path to download source to
+  # * :dir  directory to download source to, filename will be generated from the last part of the uri
+  # * :variables hash of key/value pairs to subsitute into the uri
    def download_to(args = {})
+     # TODO handle source_type == git_repo
+
      path = args.has_key?(:path) ? args[:path] : nil
      dir  = args.has_key?(:dir)  ? args[:dir]  : nil
-     variables = args.has_key?(:variables) ? args[:variables] : []
+     variables = args.has_key?(:variables) ? args[:variables] : {}
 
      # swap in any specified variables into uri
      turi = uri

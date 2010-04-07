@@ -14,169 +14,58 @@
 
 require File.dirname(__FILE__) + '/spec_helper'
 
-
-describe "Polisher::GemSource" do
-   it "should not be valid if name or uri is missing" do
-      src = GemSource.new :name => 'foo', :uri => 'bar'
-      src.valid?.should be(true)
-
-      src.name = nil
-      src.valid?.should be(false)
-      src.name = 'foo'
-
-      src.uri = nil
-      src.valid?.should be(false)
-   end
-
-   it "should clean uri properly" do
-      src = GemSource.new :uri => 'http://example.com/'
-      src.clean_uri!
-      src.uri.should == 'http://example.com'
-   end
-
-end
-
-
-describe "Polisher::ManagedGem" do
-  it "should not be valid if name or gem source is missing" do
-      gem = ManagedGem.new :name => 'foo', :gem_source_id => 1
-      gem.valid?.should be(true)
-
-      gem.name = nil
-      gem.valid?.should be(false)
-      gem.name = 'foo'
-
-      gem.gem_source_id = nil
-      gem.valid?.should be(false)
-  end
-
-  it "should not be valid if name is not unique within gem source scope" do
-     gem1 = ManagedGem.create :name => 'foo', :gem_source_id => 1
-     gem2 = ManagedGem.new :name => 'foo', :gem_source_id => 1
-     gem2.valid?.should be(false)
-  end
-
-  it "should generate correct gem source uri from gem uri" do
-     ManagedGem.uri_to_source_uri('http://rubygems.org/downloads/polisher-0.3.gem').
-         should == 'http://rubygems.org'
-  end
-
-  it "should successfully subscribe/unsubscribe to updates" do
-     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
-     gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
-     gem.subscribed?.should == true
-     gem.unsubscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
-     gem.subscribed?.should == false
-  end
-
-  it "should raise error is subscription callback_url or api_key is invalid" do
-     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
-     lambda {
-       gem.subscribe :callback_url => 42
-     }.should raise_error(ArgumentError)
-
-     tmp_key = POLISHER_CONFIG['gem_api_key']
-     POLISHER_CONFIG['gem_api_key'] = nil
-     lambda {
-       gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
-     }.should raise_error(ArgumentError)
-     POLISHER_CONFIG['gem_api_key'] = tmp_key
-  end
-
-  it "should raise error is subscription target is invalid" do
-     source = GemSource.new :name => "mg-subscription-test", :uri => "http://invalid.uri"
-     gem = ManagedGem.new :name => "polisher", :gem_source => source
-     lambda {
-       gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
-     }.should raise_error(RuntimeError)
-
-     source = GemSource.new :name => "mg-subscription-test", :uri => "http://morsi.org"
-     gem = ManagedGem.new :name => "polisher", :gem_source => source
-     lambda {
-       gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
-     }.should raise_error(RuntimeError)
-  end
-
-  it "should successfully get remote gem info" do
-     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
-     info = gem.get_info
-     info["name"].should == "polisher"
-  end
-
-  it "should raise error is get info target is invalid" do
-     source = GemSource.new :name => "mg-get-info-test", :uri => "http://invalid.uri"
-     gem = ManagedGem.new :name => "polisher", :gem_source => source
-     lambda {
-       gem.get_info
-     }.should raise_error(RuntimeError)
-  end
-
-  it "should successfully download gem" do
-     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
-     FileUtils.mkdir_p(ARTIFACTS_DIR)
-
-     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
-     path = gem.download_to(:dir => ARTIFACTS_DIR, :version => 0.3)
-     File.size?(ARTIFACTS_DIR + '/polisher-0.3.gem').should_not be_nil
-     FileUtils.rm(ARTIFACTS_DIR + '/polisher-0.3.gem')
-     path.should == ARTIFACTS_DIR + '/polisher-0.3.gem'
-
-     gem.download_to(:path => ARTIFACTS_DIR + '/my.gem', :version => 0.3)
-     File.size?(ARTIFACTS_DIR + '/my.gem').should_not be_nil
-
-     gem.download_to(:dir => ARTIFACTS_DIR)
-     File.size?(ARTIFACTS_DIR + '/polisher-0.3.gem').should_not be_nil
-  end
-
-end
-
 describe "Polisher::Project" do
   it "should not be valid if name is missing" do
       project = Project.new :name => 'foo'
-      project.valid?.should be(true)
+      project.should be_valid
 
       project.name = nil
-      project.valid?.should be(false)
+      project.should_not be_valid
   end
 
 
   it "should not be valid if duplicate name exists" do
       Project.create! :name => 'dup-project-name-test'
       project = Project.new :name => 'dup-project-name-test'
-      project.valid?.should be(false)
+      project.should_not be_valid
   end
 end
 
-describe "Polisher::ProjectSource" do
-  it "should not be valid if project_id or uri is missing" do
-      project = Project.create :name => 'project-source-test1'
-      source = ProjectSource.new :uri => 'uri', :project_id => project.id
-      source.valid?.should be(true)
+describe "Polisher::Source" do
+  it "should not be valid if name, source_type, or uri is missing or invalid" do
+      source = Source.new :uri => 'uri', :name => "foo", :source_type => "gem"
+      source.should be_valid
 
       source.uri = nil
-      source.valid?.should be(false)
-      source.uri = 'foo'
+      source.should_not be_valid
+      source.uri = 'uri'
 
-      source.project_id = nil
-      source.valid?.should be(false)
+      source.source_type = nil
+      source.should_not be_valid
+      source.source_type = 'bar'
+      source.should_not be_valid
+      source.source_type = 'file'
+
+      source.name = nil
+      source.should_not be_valid
   end
 
-  it "should not be valid if uri is not unique in project scope" do
-      project = Project.create! :name => 'project-uri-test'
-      source1 = ProjectSource.create! :uri => 'uri', :project_id => project.id
-      source2 = ProjectSource.new :uri => 'uri', :project_id => project.id
-      source2.valid?.should be(false)
+  it "should not be valid if name or uri is not unique in scope" do
+      source1 = Source.create! :uri => 'uri', :name => "foo", :source_type => "gem"
+      source2 = Source.new :uri => 'uri', :name => "bar", :source_type => "archive"
+      source2.should_not be_valid
+
+      source3 = Source.new :uri => 'zaz', :name => "foo", :source_type => "archive"
+      source3.should_not be_valid
   end
 
   it "should be downloadable" do
      FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
      FileUtils.mkdir_p(ARTIFACTS_DIR)
      
-     project = Project.create!(:name => 'project-source-download-to-test')
-     source = ProjectSource.create!(
-        #:uri => 'ftp://ftp.ruby-lang.org/pub/ruby/1.8/ruby-1.8.6-p388.tar.bz2',
+     source = Source.new(
         :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
-        :project => project)
+        :name => "joni-spec", :source_type => "file")
      path = source.download_to(:dir => ARTIFACTS_DIR)
      File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
      FileUtils.rm(ARTIFACTS_DIR + '/joni.spec')
@@ -190,10 +79,9 @@ describe "Polisher::ProjectSource" do
      FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
      FileUtils.mkdir_p(ARTIFACTS_DIR)
 
-     project = Project.create!(:name => 'project-source-param-download-test')
-     source = ProjectSource.create!(
+     source = Source.new(
         :uri => 'http://mo.morsi.org/files/%{group}/%{name}.spec',
-        :project => project)
+        :name => "joni-spec", :source_type => 'file')
      path = source.download_to(:dir => ARTIFACTS_DIR, :variables => {:group => "jruby", :name => "joni"})
      File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
      FileUtils.rm(ARTIFACTS_DIR + '/joni.spec')
@@ -207,18 +95,16 @@ describe "Polisher::ProjectSource" do
      FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
      FileUtils.mkdir_p(ARTIFACTS_DIR)
 
-     project = Project.create!(:name => 'project-source-download-to-test2')
-     source = ProjectSource.create!(
+     source = Source.new(
         :uri => 'http://invalid.uri',
-        :project => project)
+        :name => 'invalid-source1', :source_type => 'file')
      lambda {
        path = source.download_to(:dir => ARTIFACTS_DIR)
      }.should raise_error(RuntimeError)
 
-     project = Project.create!(:name => 'project-source-download-to-test3')
-     source = ProjectSource.create!(
+     source = Source.new(
         :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
-        :project => project)
+        :name => 'invalid-source2', :source_type => 'file')
      lambda {
        path = source.download_to(:dir => '/')
      }.should raise_error(RuntimeError)
@@ -232,78 +118,74 @@ end
 describe "Polisher::Event" do
 
    it "should not be valid if process is missing" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem1', :gem_source_id => 1
-      event = Event.new :managed_gem_id => gem.id, :process => 'create_repo'
-      event.valid?.should be(true)
+      project = Project.create! :name => 'valid-event-test-project0'
+      event = Event.new :project_id => project.id, :process => 'create_repo'
+      event.should be_valid
 
       event.process = nil
-      event.valid?.should be(false)
+      event.should_not be_valid
    end
 
-   it "should not be valid if both managed_gem and project are missing" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem1b', :gem_source_id => 1
-      project = Project.create :name => 'valid-event-test-project1'
+   it "should not be valid if project is missing" do
+      project = Project.create! :name => 'valid-event-test-project1'
       event = Event.new :process => 'create_repo'
-      event.valid?.should be(false)
-      event.managed_gem = gem
-      event.valid?.should be(true)
-      event.managed_gem = nil
+      event.should_not be_valid
       event.project = project
-      event.valid?.should be(true)
+      event.should be_valid
    end
 
    it "should not be valid with invalid version qualifier" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem2', :gem_source_id => 1
+      project = Project.create! :name => 'valid-event-test-project2'
 
-      event = Event.new :managed_gem_id => gem.id, :process => 'create_repo', :version_qualifier => ">", :gem_version => 5
-      event.valid?.should be(true)
+      event = Event.new :project_id => project.id, :process => 'create_repo', :version_qualifier => ">", :version => 5
+      event.should be_valid
 
       event.version_qualifier = '=='
-      event.valid?.should be(false)
+      event.should_not be_valid
    end
 
    it "should not be valid if version/qualifier are not both present or nil" do
-      gem = ManagedGem.create :name => 'valid-event-test-gem3', :gem_source_id => 1
+      project = Project.create! :name => 'valid-event-test-project3'
  
-      event = Event.new :managed_gem_id => gem.id, :process => 'create_repo', :version_qualifier => ">"
-      event.valid?.should be(false)
+      event = Event.new :project_id => project.id, :process => 'create_repo', :version_qualifier => ">"
+      event.should_not be_valid
  
-      event = Event.new :managed_gem_id => gem.id, :process => 'create_repo', :gem_version => 5
-      event.valid?.should be(false)
+      event = Event.new :project_id => project.id, :process => 'create_repo', :version => 5
+      event.should_not be_valid
 
-      event = Event.new :managed_gem_id => gem.id, :process => 'create_repo', :gem_version => 5, :version_qualifier => '<='
-      event.valid?.should be(true)
+      event = Event.new :project_id => project.id, :process => 'create_repo', :version => 5, :version_qualifier => '<='
+      event.should be_valid
    end
 
    it "should correctly resolve version qualifiers" do
-      event = Event.new :version_qualifier => nil, :gem_version => "5"
+      event = Event.new :version_qualifier => nil, :version => "5"
       event.applies_to_version?('1.1').should be(true)
       event.applies_to_version?('1.5.3').should be(true)
 
-      event = Event.new :version_qualifier => "=", :gem_version => "5.3"
+      event = Event.new :version_qualifier => "=", :version => "5.3"
       event.applies_to_version?('1.2').should be(false)
       event.applies_to_version?('5.3').should be(true)
       event.applies_to_version?('5.3.0').should be(false)
       event.applies_to_version?('5.3.1').should be(false)
       event.applies_to_version?('7.9').should be(false)
 
-      event = Event.new :version_qualifier => ">", :gem_version => "1.9.2"
+      event = Event.new :version_qualifier => ">", :version => "1.9.2"
       event.applies_to_version?('1.8.1').should be(false)
       event.applies_to_version?('1.9.1').should be(false)
       event.applies_to_version?('1.9.3').should be(true)
       event.applies_to_version?('2.0').should be(true)
 
-      event = Event.new :version_qualifier => "<", :gem_version => "0.6"
+      event = Event.new :version_qualifier => "<", :version => "0.6"
       event.applies_to_version?('0.5').should be(true)
       event.applies_to_version?('0.6').should be(false)
       event.applies_to_version?('0.7').should be(false)
 
-      event = Event.new :version_qualifier => ">=", :gem_version => "1.9"
+      event = Event.new :version_qualifier => ">=", :version => "1.9"
       event.applies_to_version?('1.8').should be(false)
       event.applies_to_version?('1.9').should be(true)
       event.applies_to_version?('2.0').should be(true)
 
-      event = Event.new :version_qualifier => "<=", :gem_version => "0.6.4"
+      event = Event.new :version_qualifier => "<=", :version => "0.6.4"
       event.applies_to_version?('0.5.2').should be(true)
       event.applies_to_version?('0.6.1').should be(true)
       event.applies_to_version?('0.6.6').should be(false)
@@ -316,23 +198,23 @@ describe "Polisher::Event" do
         event.applies_to_version?('0.5.2')
       }.should raise_error(ArgumentError)
 
-      event.gem_version = '0.7'
+      event.version = '0.7'
       lambda {
         event.applies_to_version?(111)
       }.should raise_error(ArgumentError)
    end
 
    it "should successfully run event process" do
-      gem = ManagedGem.new :name => "foobar"
-      event = Event.new :managed_gem => gem, :process => "test_event_run_method", :process_options => "a;b;c"
+      project = Project.new :name => "foobar"
+      event = Event.new :project => project, :process => "test_event_run_method", :process_options => "a;b;c"
       event.run
 
-      $test_event_run_hash[:gem].should_not be_nil
+      $test_event_run_hash[:project].should_not be_nil
       $test_event_run_hash[:first].should_not be_nil
       $test_event_run_hash[:second].should_not be_nil
       $test_event_run_hash[:third].should_not be_nil
 
-      $test_event_run_hash[:gem].name.should == "foobar"
+      $test_event_run_hash[:project].name.should == "foobar"
       $test_event_run_hash[:first].should == "a"
       $test_event_run_hash[:second].should == "b"
       $test_event_run_hash[:third].should == "c"
@@ -354,16 +236,16 @@ describe "Polisher::Event" do
    end
 
    it "should raise an exception if running event process that doesn't correspond to a method" do
-      gem = ManagedGem.new :name => "foobar"
-      event = Event.new :managed_gem => gem, :process => "non_existant_method"
+      project = Project.new :name => "foobar"
+      event = Event.new :project => project, :process => "non_existant_method"
       lambda {
         event.run
       }.should raise_error(ArgumentError)
    end
 
    it "should raise an exception if event process being run does" do
-      gem = ManagedGem.new :name => "foobar"
-      event = Event.new :managed_gem => gem, :process => "error_generating_method"
+      project = Project.new :name => "foobar"
+      event = Event.new :project => project, :process => "error_generating_method"
       lambda {
         event.run
       }.should raise_error(RuntimeError)
@@ -375,7 +257,6 @@ $test_event_run_hash = {}
 
 # helper method, invoked in Event::run spec
 def test_event_run_method(entity, process_options = [nil, nil, nil], optional_params = {})
-  $test_event_run_hash[:gem]     = entity if entity.class == ManagedGem
   $test_event_run_hash[:project] = entity if entity.class == Project
   $test_event_run_hash[:first]  = process_options[0]
   $test_event_run_hash[:second] = process_options[1]

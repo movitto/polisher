@@ -20,6 +20,7 @@ require 'fileutils'
 
 # lib/ modules
 require 'common'
+require 'gem_adapter'
 require 'sinatra/url_for'
 
 # db modules

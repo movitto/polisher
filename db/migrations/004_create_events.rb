@@ -10,15 +10,18 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-class CreateManagedGems < ActiveRecord::Migration
+class CreateEvents < ActiveRecord::Migration
   def self.up
-    create_table :managed_gems do |t|
-      t.string        :name
-      t.references    :gem_source
+    create_table :events do |t|
+      t.references :project
+      t.string     :process
+      t.string     :version
+      t.string     :version_qualifier
+      t.string     :process_options
     end
   end
 
   def self.down
-    drop_table :managed_gems
+    drop_table :events
   end
 end
