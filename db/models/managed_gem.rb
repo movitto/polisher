@@ -39,27 +39,39 @@ class ManagedGem < ActiveRecord::Base
    def subscribe(args = {})
       callback_url = args[:callback_url]
       api_key = POLISHER_CONFIG["gem_api_key"]
+      raise ArgumentError, "must specify valid callback url and api key" unless callback_url.class == String && api_key.class == String
 
       subscribe_path = '/api/v1/web_hooks'
       headers = { 'Authorization' => api_key }
       data = "gem_name=#{name}&url=#{callback_url}"
 
-      http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80) 
-      res = http.post(subscribe_path, data, headers)
-      # TODO handle res = #<Net::HTTPNotFound:0x7f1df8319e40> This gem could not be found
+      begin
+        http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80)
+        res = http.post(subscribe_path, data, headers)
+        raise RuntimeError if res.class == Net::HTTPNotFound
+      rescue Exception => e
+        raise RuntimeError, "could not subscribe to gem #{name} at #{gem_source.uri}#{subscribe_path}"
+      end
    end
 
    # determine if we are subscribed to gem
    def subscribed?
       api_key = POLISHER_CONFIG["gem_api_key"]
+      raise ArgumentError, "must specify valid api key" unless api_key.class == String
 
       subscribe_path = '/api/v1/web_hooks.json'
       headers = { 'Authorization' => api_key }
 
-      http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80) 
-      res  = http.get(subscribe_path, headers).body
-      res  = JSON.parse(res)
-      return res.has_key?(name)
+      begin
+        http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80)
+        res  = http.get(subscribe_path, headers).body
+        raise RuntimeError if res.class == Net::HTTPNotFound
+        res  = JSON.parse(res)
+        return res.has_key?(name)
+
+      rescue Exception => e
+        raise RuntimeError, "could not connect to gem source at #{gem_source.uri}#{subscribe_path}"
+      end
    end
 
    # unsubscribe to updates to this gem from associated gem source
@@ -67,23 +79,36 @@ class ManagedGem < ActiveRecord::Base
       return unless subscribed?
       callback_url = args[:callback_url]
       api_key = POLISHER_CONFIG["gem_api_key"]
+      raise ArgumentError, "must specify valid callback url and api key" unless callback_url.class == String && api_key.class == String
 
       subscribe_path = "/api/v1/web_hooks/remove?gem_name=#{name}&url=#{callback_url}"
       headers = { 'Authorization' => api_key }
 
-      http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80) 
-      res = http.delete(subscribe_path, headers)
+      begin
+        http = Net::HTTP.new(URI.parse(gem_source.uri).host, 80)
+        res = http.delete(subscribe_path, headers)
+        raise RuntimeError if res.class == Net::HTTPNotFound
+      rescue Exception => e
+        raise RuntimeError, "could not delete gem #{name} via #{gem_source.uri}#{subscribe_path}"
+      end
    end
 
    # return hash of gem attributes/values retreived from remote source
    def get_info
-       info = nil
-       source_uri = URI.parse(gem_source.uri).host
-       get_path = "/api/v1/gems/#{name}.json"
+     info = nil
+     source_uri = URI.parse(gem_source.uri).host
+     get_path = "/api/v1/gems/#{name}.json"
+     begin
        Net::HTTP.start(source_uri, 80) { |http|
-          info = JSON.parse(http.get(get_path).body)
+          res = http.get(get_path).body
+          raise RuntimeError if res.class == Net::HTTPNotFound
+          info = JSON.parse(res)
        }
-       return info
+     rescue Exception => e
+      raise RuntimeError, "could not get info for gem #{name} via #{source_uri}#{get_path}"
+     end
+
+     return info
    end
 
    def download_to(args = {})
@@ -99,12 +124,20 @@ class ManagedGem < ActiveRecord::Base
      else
        gem_uri = source.uri + "/gems/#{name}-#{version}.gem"
      end
-     path = dir + "/#{name}-#{version}.gem" if path.nil?
 
-     curl = Curl::Easy.new(gem_uri)
-     curl.follow_location = true # follow redirects
-     curl.perform
-     File.write path, curl.body_str
+     begin
+       path = dir + "/#{name}-#{version}.gem" if path.nil?
+       dir  = File.dirname(path)
+       raise ArgumentError unless File.writable?(dir)
+
+       curl = Curl::Easy.new(gem_uri)
+       curl.follow_location = true # follow redirects
+       curl.perform
+       File.write path, curl.body_str
+
+     rescue Exception => e
+       raise RuntimeError, "could not download gem from #{gem_uri} to #{path}"
+     end
 
      return path
    end

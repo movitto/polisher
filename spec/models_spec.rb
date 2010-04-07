@@ -69,10 +69,46 @@ describe "Polisher::ManagedGem" do
      gem.subscribed?.should == false
   end
 
+  it "should raise error is subscription callback_url or api_key is invalid" do
+     gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
+     lambda {
+       gem.subscribe :callback_url => 42
+     }.should raise_error(ArgumentError)
+
+     tmp_key = POLISHER_CONFIG['gem_api_key']
+     POLISHER_CONFIG['gem_api_key'] = nil
+     lambda {
+       gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
+     }.should raise_error(ArgumentError)
+     POLISHER_CONFIG['gem_api_key'] = tmp_key
+  end
+
+  it "should raise error is subscription target is invalid" do
+     source = GemSource.new :name => "mg-subscription-test", :uri => "http://invalid.uri"
+     gem = ManagedGem.new :name => "polisher", :gem_source => source
+     lambda {
+       gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
+     }.should raise_error(RuntimeError)
+
+     source = GemSource.new :name => "mg-subscription-test", :uri => "http://morsi.org"
+     gem = ManagedGem.new :name => "polisher", :gem_source => source
+     lambda {
+       gem.subscribe :callback_url => "http://projects.morsi.org/polisher/demo/gems/released/1"
+     }.should raise_error(RuntimeError)
+  end
+
   it "should successfully get remote gem info" do
      gem = ManagedGem.new :name => "polisher", :gem_source_id => 1
      info = gem.get_info
      info["name"].should == "polisher"
+  end
+
+  it "should raise error is get info target is invalid" do
+     source = GemSource.new :name => "mg-get-info-test", :uri => "http://invalid.uri"
+     gem = ManagedGem.new :name => "polisher", :gem_source => source
+     lambda {
+       gem.get_info
+     }.should raise_error(RuntimeError)
   end
 
   it "should successfully download gem" do
@@ -84,7 +120,6 @@ describe "Polisher::ManagedGem" do
      File.size?(ARTIFACTS_DIR + '/polisher-0.3.gem').should_not be_nil
      FileUtils.rm(ARTIFACTS_DIR + '/polisher-0.3.gem')
      path.should == ARTIFACTS_DIR + '/polisher-0.3.gem'
-
 
      gem.download_to(:path => ARTIFACTS_DIR + '/my.gem', :version => 0.3)
      File.size?(ARTIFACTS_DIR + '/my.gem').should_not be_nil
@@ -167,6 +202,31 @@ describe "Polisher::ProjectSource" do
      source.download_to(:path => ARTIFACTS_DIR + '/joni.spec')
      File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
   end
+
+  it "should raise an exception if download source uri or destination path is invalid" do
+     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+     FileUtils.mkdir_p(ARTIFACTS_DIR)
+
+     project = Project.create!(:name => 'project-source-download-to-test2')
+     source = ProjectSource.create!(
+        :uri => 'http://invalid.uri',
+        :project => project)
+     lambda {
+       path = source.download_to(:dir => ARTIFACTS_DIR)
+     }.should raise_error(RuntimeError)
+
+     project = Project.create!(:name => 'project-source-download-to-test3')
+     source = ProjectSource.create!(
+        :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
+        :project => project)
+     lambda {
+       path = source.download_to(:dir => '/')
+     }.should raise_error(RuntimeError)
+
+     lambda {
+       path = source.download_to(:dir => '/nonexistantfoobar')
+     }.should raise_error(RuntimeError)
+  end
 end
 
 describe "Polisher::Event" do
@@ -216,7 +276,7 @@ describe "Polisher::Event" do
    end
 
    it "should correctly resolve version qualifiers" do
-      event = Event.new :version_qualifier => nil
+      event = Event.new :version_qualifier => nil, :gem_version => "5"
       event.applies_to_version?('1.1').should be(true)
       event.applies_to_version?('1.5.3').should be(true)
 
@@ -250,6 +310,18 @@ describe "Polisher::Event" do
       event.applies_to_version?('0.7.4').should be(false)
    end
 
+   it "should raise error if trying to compare invalid versions" do
+      event = Event.new
+      lambda {
+        event.applies_to_version?('0.5.2')
+      }.should raise_error(ArgumentError)
+
+      event.gem_version = '0.7'
+      lambda {
+        event.applies_to_version?(111)
+      }.should raise_error(ArgumentError)
+   end
+
    it "should successfully run event process" do
       gem = ManagedGem.new :name => "foobar"
       event = Event.new :managed_gem => gem, :process => "test_event_run_method", :process_options => "a;b;c"
@@ -280,6 +352,22 @@ describe "Polisher::Event" do
       $test_event_run_hash[:some].should == "thing"
       $test_event_run_hash[:answer].should == 42
    end
+
+   it "should raise an exception if running event process that doesn't correspond to a method" do
+      gem = ManagedGem.new :name => "foobar"
+      event = Event.new :managed_gem => gem, :process => "non_existant_method"
+      lambda {
+        event.run
+      }.should raise_error(ArgumentError)
+   end
+
+   it "should raise an exception if event process being run does" do
+      gem = ManagedGem.new :name => "foobar"
+      event = Event.new :managed_gem => gem, :process => "error_generating_method"
+      lambda {
+        event.run
+      }.should raise_error(RuntimeError)
+   end
 end
 
 # prolly should fixure out a better way todo this
@@ -295,4 +383,8 @@ def test_event_run_method(entity, process_options = [nil, nil, nil], optional_pa
   $test_event_run_hash[:key1]   = optional_params[:key1]
   $test_event_run_hash[:some]   = optional_params[:some]
   $test_event_run_hash[:answer] = optional_params[:answer]
+end
+
+def error_generating_method(entity, process_options = [nil, nil, nil], optional_params = {})
+  raise RuntimeError
 end

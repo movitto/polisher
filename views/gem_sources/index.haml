@@ -12,7 +12,7 @@
 %h4
   New Source
 
-%form{:method => "post", :action => url_for("/gem_sources/create")}
+%form{:id => 'create_gem_source_form', :method => "post", :action => url_for("/gem_sources/create")}
   %table
     %tr
       %td
@@ -35,7 +35,13 @@
     $('.delete_source_link').bind('click', function(e){
        c = confirm("delete gem source?")
        if(c){
-         delete_request(this.href, function(result) { reload(); });
+         delete_request(this.href, function(result) { handle_request_result(result); });
        }
        return false;
+    });
+    $('#create_gem_source_form').submit(function(e){
+      post_request(this.action,
+                   ({ name : $('#name').val(), uri : $('#uri').val()}),
+                   function(result) { handle_request_result(result) });
+      return false;
     });

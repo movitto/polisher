@@ -17,6 +17,15 @@ require 'rest_client'
 
 module Polisher
 
+# helper method to handle (print) xml status response
+def handle_response(operation, response)
+  rr = LibXML::XML::Document.string(response.body).root
+  success = rr.children.find { |c| c.name == "success" }.content.strip
+  msg  = rr.children.find { |c| c.name == "message" }.content.strip
+  puts "#{operation} returned w/ success = #{success} and the message: #{msg}"
+end
+module_function :handle_response
+
 # DSL representations of model classes (so as to not require db connection on client side)
 
 # DSL Managed Gem
@@ -56,19 +65,19 @@ class ManagedGem
 
      RestClient.post("#{$polisher_uri}/events/create", 
                     :managed_gem_id => id, :process => process, :gem_version => version,
-                    :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
+                    :version_qualifier => version_qualifier, :process_options => process_options) { |response| Polisher.handle_response('create gem event', response) }
    end
 
    # Delete managed gem
    def delete
-     RestClient.delete("#{$polisher_uri}/gems/destroy/#{id}"){ |response| }
+     RestClient.delete("#{$polisher_uri}/gems/destroy/#{id}"){ |response| Polisher.handle_response('delete gem', response)}
    end
 
    # Test fire gem released event for specified version
    def released(version)
      RestClient.post("#{$polisher_uri}/gems/released",
                     :name    => name, :version => version, 
-                    :gem_uri => source.uri + "/gems/#{name}-#{version}.gem" ) { |response| }
+                    :gem_uri => source.uri + "/gems/#{name}-#{version}.gem" ) { |response| Polisher.handle_response('release gem', response)}
    end
 end
 
@@ -135,24 +144,24 @@ class Project
 
     RestClient.post("#{$polisher_uri}/events/create", 
                    :project_id => id, :process => process, :gem_version => version,
-                   :version_qualifier => version_qualifier, :process_options => process_options) { |response| }
+                   :version_qualifier => version_qualifier, :process_options => process_options) { |response| Polisher.handle_response('create project event', response) }
   end
 
   # Delete project
   def delete
-    RestClient.delete("#{$polisher_uri}/projects/destroy/#{id}") { |response| }
+    RestClient.delete("#{$polisher_uri}/projects/destroy/#{id}") { |response| Polisher.handle_response('delete project', response) }
   end
 
   # Add new Project source w/ specified uri
   def add_source(uri)
     sources << uri
-    RestClient.post("#{$polisher_uri}/project_sources/create", :project_id => id, :uri => uri) { |response| }
+    RestClient.post("#{$polisher_uri}/project_sources/create", :project_id => id, :uri => uri) { |response| Polisher.handle_response('add project source', response) }
   end
 
   # Test fire project released event for specified version
   def released(version, params = {})
      rparams = { :name => name, :version => version}.merge!(params)
-     RestClient.post("#{$polisher_uri}/projects/released", rparams ) { |response| }
+     RestClient.post("#{$polisher_uri}/projects/released", rparams ) { |response| Polisher.handle_response('released project', response) }
   end
 end
 
@@ -192,7 +201,7 @@ def gem(args = {})
   return nil if src.nil? || args[:name].nil?
   args[:gem_source_id] = src.id
 
-  RestClient.post("#{$polisher_uri}/gems/create", args) { |response| }
+  RestClient.post("#{$polisher_uri}/gems/create", args) { |response| Polisher.handle_response('create gem', response) }
   gem = gem(args)
   yield gem if block_given?
   return gem
@@ -222,7 +231,7 @@ def source(args = {})
       return source
     end
   }
-  RestClient.post("#{$polisher_uri}/gem_sources/create", args) { |response| }
+  RestClient.post("#{$polisher_uri}/gem_sources/create", args) { |response| Polisher.handle_response('create gem source', response) }
   source = source(args)
   yield source if block_given?
   return source
@@ -251,9 +260,8 @@ def project(args = {})
       return project 
     end
   }
-  RestClient.post("#{$polisher_uri}/projects/create", args) { |response| }
+  RestClient.post("#{$polisher_uri}/projects/create", args) { |response| Polisher.handle_response('create project', response)}
   project = project(args)
   yield project if block_given?
   return project
 end
-

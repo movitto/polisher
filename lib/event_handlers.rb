@@ -21,17 +21,19 @@ require 'erb'
 require 'gem2rpm'
 require 'net/smtp'
 
+# TODO raise some exceptions of our own here (though not neccessary as event.run will rescue everything raised, it might help w/ debugging)
+
 module EventHandlers
 
 # Convert entity (gem, project) into another package format.
-# TODO rename to create_rpm_package
-def create_package(entity, process_options = [''], optional_params = {})
+def create_rpm_package(entity, process_options = [''], optional_params = {})
    template_file = process_options[0]
    spec_file = nil
 
    if entity.class == ManagedGem
      # d/l gem into artifacts/gems dir, link it into the artifacts/SOURCES dir
-     gem_file_path = File.expand_path(entity.download_to(:dir => ARTIFACTS_DIR + "/gems", :version => optional_params[:version]))
+     gem_file_path = entity.download_to(:dir => ARTIFACTS_DIR + "/gems", :version => optional_params[:version])
+     gem_file_path = File.expand_path(gem_file_path)
      gem_file = gem_file_path.split('/').last
      link_file = ARTIFACTS_DIR + '/SOURCES/' + gem_file
      FileUtils.rm_f(link_file) if File.symlink?(link_file)
@@ -76,8 +78,7 @@ def create_package(entity, process_options = [''], optional_params = {})
 end
 
 # Update specified repository w/ latest entity (gem, project) artifact.
-# TODO rename to update_yum_repo
-def update_repo(entity, process_options, optional_params = {})
+def update_yum_repo(entity, process_options, optional_params = {})
    repository = process_options[0]
    version = optional_params[:version]
 

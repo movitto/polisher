@@ -28,15 +28,22 @@ class ProjectSource < ActiveRecord::Base
      turi = uri
      variables.each { |k,v| turi.gsub!("%{#{k}}", v.to_s) }
 
-     # generate path which to d/l the file to
-     urio = URI::parse(turi)
-     path = dir + "/" + urio.path.split('/').last if path.nil?
+     begin
+       # generate path which to d/l the file to
+       urio = URI::parse(turi)
+       path = dir + "/" + urio.path.split('/').last if path.nil?
+       dir  = File.dirname(path)
+       raise ArgumentError unless File.writable?(dir)
 
-     # d/l the file
-     curl = Curl::Easy.new(turi)
-     curl.follow_location = true # follow redirects
-     curl.perform
-     File.write path, curl.body_str
+       # d/l the file
+       curl = Curl::Easy.new(turi)
+       curl.follow_location = true # follow redirects
+       curl.perform
+       File.write path, curl.body_str
+
+     rescue Exception => e
+       raise RuntimeError, "could not download project source from #{turi} to #{path}"
+     end
 
      return path
    end

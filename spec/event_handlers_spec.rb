@@ -43,7 +43,7 @@ describe "EventHandlers" do
   end
 
   it "should correctly create gem package" do
-     create_package(@gem)
+     create_rpm_package(@gem)
      File.exists?(ARTIFACTS_DIR + '/gems/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
@@ -53,7 +53,7 @@ describe "EventHandlers" do
 
   it "should correctly create gem package using template" do
     File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_TEST_TEMPLATE)
-    create_package(@gem, [ARTIFACTS_DIR + '/templates/polisher.spec.tpl'])
+    create_rpm_package(@gem, [ARTIFACTS_DIR + '/templates/polisher.spec.tpl'])
     File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
     File.read_all(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should =~ /.*by polisher.*/
   end
@@ -61,7 +61,7 @@ describe "EventHandlers" do
   it "should correctly create project package" do
     template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
     File.write(template, POLISHER_PROJECTS_TEST_TEMPLATE)
-    create_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
+    create_rpm_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
 
     File.exists?(ARTIFACTS_DIR + '/SOURCES/activerecord-2.0.1.tgz').should == true
     File.exists?(ARTIFACTS_DIR + '/SPECS/ruby-activerecord.spec').should == true
@@ -70,13 +70,13 @@ describe "EventHandlers" do
   end
 
   it "should correctly update repository" do
-     create_package(@gem)
-     update_repo(@gem, ['fedora-ruby'])
+     create_rpm_package(@gem)
+     update_yum_repo(@gem, ['fedora-ruby'])
 
      template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
      File.write(template, POLISHER_PROJECTS_TEST_TEMPLATE)
-     create_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
-     update_repo(@project, ['fedora-ruby'])
+     create_rpm_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
+     update_yum_repo(@project, ['fedora-ruby'])
 
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch').should == true
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata').should == true

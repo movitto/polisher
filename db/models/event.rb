@@ -28,7 +28,7 @@ class Event < ActiveRecord::Base
 
    # TODO right mow just returning a fixed list, at some point dynamically generate
    def self.processes
-      ["create_package", "update_repo", "run_test_suite", "notify_subscribers"]
+      ["create_rpm_package", "update_yum_repo", "run_test_suite", "notify_subscribers"]
    end
 
    # XXX FIXME we need this for security
@@ -49,10 +49,12 @@ class Event < ActiveRecord::Base
 
    # determine if event applies to specified version
    def applies_to_version?(version)
+     raise ArgumentError, "valid event version #{gem_version} and version #{version} required" unless gem_version.class == String && version.class == String
+
      # XXX remove any non-numeric chars from the version number (eg if a version has a '-beta' or whatnot, not pretty but works for now
      version.gsub(/[a-zA-Z]*/, '')
 
-     # TODO this will evaluate to false "1.1" = "1.1.0" here, is this correct? (implement this in a more robust way)
+     # TODO this will evaluate to false "1.1" = "1.1.0" here, is this correct? (implement this in a more robust way, eg split version into array around delims, compare each array elements w/ special case handling)
      gv, ev = version, gem_version
      return (["", nil].include? version_qualifier ) ||
             (version_qualifier == "="  && gv == ev) ||
@@ -64,8 +66,13 @@ class Event < ActiveRecord::Base
 
    # run the event
    def run(params = {})
-      # covert process to method name
-      handler = method(process.intern)
+      handler = nil
+      begin
+        # covert process to method name
+        handler = method(process.intern)
+      rescue NameError => e
+        raise ArgumentError, "could not find event handler #{process}"
+      end
 
       entity = gem
       entity = project if entity.nil?
@@ -73,7 +80,11 @@ class Event < ActiveRecord::Base
       # generate array of event params from gem/project, semi-colon seperated process options, and options params
       event_params  = [entity, (process_options.nil? ? [] : process_options.split(';')), params]
 
-      # invoke
-      handler.call *event_params
+      begin
+        # invoke
+        handler.call *event_params
+      rescue Exception => e
+        raise RuntimeError, "error when running event handler #{process}: #{e}"
+      end
    end
 end
