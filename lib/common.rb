@@ -28,8 +28,7 @@ def create_missing_polisher_dirs(args = {})
   db_data_dir   = args[:db_data_dir]
   log_dir       = args[:log_dir]
 
-  [artifacts_dir + '/gems', 
-   artifacts_dir + '/repos', 
+  [artifacts_dir + '/repos',
    artifacts_dir + '/SOURCES', 
    artifacts_dir + '/SPECS', 
    artifacts_dir + '/templates', 

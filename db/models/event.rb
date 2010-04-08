@@ -20,9 +20,10 @@ class Event < ActiveRecord::Base
    validates_presence_of :project_id
    validates_presence_of :process
 
-   # TODO right mow just returning a fixed list, at some point dynamically generate
+   # Dynamically generate from methods we define in the lib/event_handlers module.
+   # Add more methods to that module for them to appear here
    def self.processes
-      ["create_rpm_package", "update_yum_repo", "run_test_suite", "notify_subscribers"]
+     EventHandlers.public_instance_methods.collect { |m| m.to_s }
    end
 
    # XXX FIXME we need this for security

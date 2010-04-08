@@ -13,7 +13,8 @@
 require 'curl' # requires 'curb' package
 
 class Source < ActiveRecord::Base
-  has_and_belongs_to_many :projects
+  has_many :projects_sources
+  has_many :projects, :through => :projects_sources
 
   validates_presence_of   :name
   validates_uniqueness_of :name
@@ -21,9 +22,18 @@ class Source < ActiveRecord::Base
   validates_presence_of   :uri
   validates_uniqueness_of :uri
 
+  # TODO split 'file' source type into 'archive', 'patch', etc?
+
   SOURCE_TYPES = ['file', 'gem', 'git_repo']
 
   validates_inclusion_of :source_type, :in => SOURCE_TYPES
+
+  # Extract filename of this source from path
+  def filename(variables = {})
+    turi = uri
+    variables.each { |k,v| turi.gsub!("%{#{k}}", v.to_s) }
+    URI::parse(turi).path.split('/').last
+  end
 
   # Download source, args may contain any of the following
   # * :path path to download source to
@@ -42,8 +52,8 @@ class Source < ActiveRecord::Base
 
      begin
        # generate path which to d/l the file to
-       urio = URI::parse(turi)
-       path = dir + "/" + urio.path.split('/').last if path.nil?
+       fn = filename(variables)
+       path = "#{dir}/#{fn}" if path.nil?
        dir  = File.dirname(path)
        raise ArgumentError unless File.writable?(dir)
 

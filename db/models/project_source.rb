@@ -10,16 +10,14 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-class CreateProjectsSources < ActiveRecord::Migration
-  def self.up
-    create_table :projects_sources do |t|
-      t.references    :project
-      t.references    :source
-      t.boolean       :primary_source
-    end
-  end
+# Need this class since attributes are defined on the relationship
+# http://robots.thoughtbot.com/post/159808010/rails-has-and-belongs-to-many-conveniences
+class ProjectsSource < ActiveRecord::Base
+  belongs_to :project
+  belongs_to :source
 
-  def self.down
-    drop_table :projects_sources
-  end
+  # TODO validate primary_source is only set true for once
+  # source per project
+
+  # TODO default primary_source to false
 end

@@ -11,7 +11,9 @@
 # <http://www.gnu.org/licenses/>
 
 class Project < ActiveRecord::Base
-  has_and_belongs_to_many :sources
+  has_many :projects_sources
+  has_many :sources, :through => :projects_sources
+
   has_many :events
 
   validates_presence_of   :name
@@ -20,5 +22,17 @@ class Project < ActiveRecord::Base
   # Download all project sources to specified :dir
   def download_to(args = {})
     sources.each { |source| source.download_to args }
+  end
+
+  # Get the project primary source
+  def primary_source
+    ps = projects_sources.all.find { |ps| ps.primary_source }
+    return ps.nil? ? nil : ps.source
+  end
+
+  # Set the project primary source
+  def primary_source=(source)
+    projects_sources << ProjectsSource.new(:project => self, :source => source, :primary_source => true)
+    #source.save! ; save!
   end
 end

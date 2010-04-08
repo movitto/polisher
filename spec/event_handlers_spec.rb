@@ -21,46 +21,41 @@ BUILD_VERSION='fc11'
 include EventHandlers
 
 describe "EventHandlers" do
+
+  before(:all) do
+    @gem = Project.create! :name => 'rubygem-polisher'
+    @gem.primary_source= Source.new :name => 'polisher', :source_type => 'gem', :uri => 'http://rubygems.org/gems/polisher-%{version}.gem'
+    @project = Project.create :name => 'ruby-activerecord'
+    @project.sources << Source.new(:name => 'activerecord', :source_type => 'file',
+          :uri     => 'http://rubyforge.org/frs/download.php/28874/activerecord-%{version}.tgz')
+  end
  
   before(:each) do
      FileUtils.rm_rf(ARTIFACTS_DIR)
-     FileUtils.mkdir_p(ARTIFACTS_DIR + '/gems')
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/repos')
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/SOURCES')
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/SPECS')
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/templates')
-
-     unless defined? @gem
-       @gem = ManagedGem.create :name => 'polisher', :gem_source_id => 1
-     end
-
-     unless defined? @project
-       @project = Project.create :name => 'ruby-activerecord'
-       @project.project_sources << ProjectSource.create(:project => @project,
-             :uri     => 'http://rubyforge.org/frs/download.php/28874/activerecord-%{version}.tgz')
-
-     end
   end
 
-  it "should correctly create gem package" do
-     create_rpm_package(@gem)
-     File.exists?(ARTIFACTS_DIR + '/gems/polisher-0.3.gem').should == true
+  it "should correctly create a gem based package" do
+     create_rpm_package(@gem, [''], :version => '0.3')
      File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
      File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.3-1.#{BUILD_VERSION}.src.rpm").should == true
      File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
   end
 
-  it "should correctly create gem package using template" do
-    File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_TEST_TEMPLATE)
-    create_rpm_package(@gem, [ARTIFACTS_DIR + '/templates/polisher.spec.tpl'])
+  it "should correctly create a gem based package using template" do
+    File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_GEM2RPM_TEST_TEMPLATE)
+    create_rpm_package(@gem, [ARTIFACTS_DIR + '/templates/polisher.spec.tpl'], :version => '0.3')
     File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
     File.read_all(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should =~ /.*by polisher.*/
   end
 
-  it "should correctly create project package" do
+  it "should correctly create an upstream based project package" do
     template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
-    File.write(template, POLISHER_PROJECTS_TEST_TEMPLATE)
+    File.write(template, POLISHER_ERB_TEST_TEMPLATE)
     create_rpm_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
 
     File.exists?(ARTIFACTS_DIR + '/SOURCES/activerecord-2.0.1.tgz').should == true
@@ -70,11 +65,11 @@ describe "EventHandlers" do
   end
 
   it "should correctly update repository" do
-     create_rpm_package(@gem)
+     create_rpm_package(@gem, [''], :version => '0.3')
      update_yum_repo(@gem, ['fedora-ruby'])
 
      template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
-     File.write(template, POLISHER_PROJECTS_TEST_TEMPLATE)
+     File.write(template, POLISHER_ERB_TEST_TEMPLATE)
      create_rpm_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
      update_yum_repo(@project, ['fedora-ruby'])
 
@@ -88,14 +83,9 @@ describe "EventHandlers" do
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/filelists.xml.gz').should == true
   end
 
-  it "should correctly notify email recipients" do
-     # TODO test notify subscribers
-     #notify_subscribers(@gem, [...])
-  end
-
 end
 
-POLISHER_TEST_TEMPLATE =
+POLISHER_GEM2RPM_TEST_TEMPLATE =
 %q{# Generated from <%= File::basename(format.gem_path) %> by polisher -*- rpm-spec -*-
 %define ruby_sitelib %(ruby -rrbconfig -e "puts Config::CONFIG['sitelibdir']")
 %define gemdir %(ruby -rubygems -e 'puts Gem::dir' 2>/dev/null)
@@ -191,7 +181,7 @@ rm -rf %{buildroot}
 }
 
 # copied w/ changes from http://cvs.fedoraproject.org/viewvc/rpms/ruby-activerecord/F-13/ruby-activerecord.spec?revision=1.6&view=co
-POLISHER_PROJECTS_TEST_TEMPLATE =
+POLISHER_ERB_TEST_TEMPLATE =
 %q{
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig -e "puts Config::CONFIG['sitelibdir']")}
 %define rname activerecord

@@ -29,6 +29,18 @@ describe "Polisher::Project" do
       project = Project.new :name => 'dup-project-name-test'
       project.should_not be_valid
   end
+
+  it "should provide access to primary source" do
+      project = Project.create! :name => 'primary-source-project-test'
+      source1 = Source.create!(:name => 'primary-source-test1', :source_type => 'file', :uri => 'http://foo1.foo')
+      source2 = Source.create!(:name => 'primary-source-test2', :source_type => 'file', :uri => 'http://foo2.foo')
+      project.sources << source1
+      project.primary_source= source2
+
+      primary_src = project.primary_source
+      primary_src.should_not be_nil
+      primary_src.name.should == source2.name
+  end
 end
 
 describe "Polisher::Source" do
@@ -57,6 +69,13 @@ describe "Polisher::Source" do
 
       source3 = Source.new :uri => 'zaz', :name => "foo", :source_type => "archive"
       source3.should_not be_valid
+  end
+
+  it "should return filename generated from uri" do
+     source = Source.new(
+        :uri => 'http://mo.morsi.org/files/jruby/joni-%{version}.spec?addition=foo&params=bar',
+        :name => "joni-spec", :source_type => "file")
+     source.filename(:version => 123).should == "joni-123.spec"
   end
 
   it "should be downloadable" do
@@ -116,6 +135,13 @@ describe "Polisher::Source" do
 end
 
 describe "Polisher::Event" do
+
+   it "should return list of supported event handlers" do
+     processes = Event::processes
+     processes.size.should == 2
+     processes.include?("create_rpm_package").should be_true
+     processes.include?("update_yum_repo").should be_true
+   end
 
    it "should not be valid if process is missing" do
       project = Project.create! :name => 'valid-event-test-project0'
