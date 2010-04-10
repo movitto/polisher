@@ -10,14 +10,14 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-# Need this class since attributes are defined on the relationship
-# http://robots.thoughtbot.com/post/159808010/rails-has-and-belongs-to-many-conveniences
 class ProjectsSource < ActiveRecord::Base
   belongs_to :project
   belongs_to :source
 
-  # TODO validate primary_source is only set true for once
-  # source per project
+  validates_uniqueness_of :source_id, :scope => [:project_id, :project_version]
 
-  # TODO default primary_source to false
+  # validate only one primary_source set to 'true' in scope of (project_id, project_version)
+  validates_uniqueness_of :primary_source,
+                          :scope => [:project_id, :project_version],
+                          :if    => Proc.new { |ps| ps.primary_source }
 end

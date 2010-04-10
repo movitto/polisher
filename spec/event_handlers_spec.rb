@@ -24,10 +24,22 @@ describe "EventHandlers" do
 
   before(:all) do
     @gem = Project.create! :name => 'rubygem-polisher'
-    @gem.primary_source= Source.new :name => 'polisher', :source_type => 'gem', :uri => 'http://rubygems.org/gems/polisher-%{version}.gem'
+    @gem.primary_source = Source.new :name => 'polisher', :source_type => 'gem', :uri => 'http://rubygems.org/gems/polisher-%{version}.gem'
+    @gem_event1 = Event.create! :project => @gem, :process => 'create_rpm_package'
+
+    @gem_event2 = Event.create! :project => @gem, :process => 'create_rpm_package',
+                                :process_options => ARTIFACTS_DIR + '/templates/polisher.spec.tpl'
+
+    @gem_event3 = Event.create! :project => @gem, :process => 'update_repo', :process_options => "#{ARTIFACTS_DIR}/repos/fedora-ruby"
+
     @project = Project.create :name => 'ruby-activerecord'
     @project.sources << Source.new(:name => 'activerecord', :source_type => 'file',
           :uri     => 'http://rubyforge.org/frs/download.php/28874/activerecord-%{version}.tgz')
+
+    @project_event1 = Event.create! :project => @project, :process => 'create_rpm_package',
+                                    :process_options => ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
+
+    @project_event2 = Event.create! :project => @project, :process => 'update_repo', :process_options => "#{ARTIFACTS_DIR}/repos/fedora-ruby"
   end
  
   before(:each) do
@@ -36,10 +48,13 @@ describe "EventHandlers" do
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/SOURCES')
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/SPECS')
      FileUtils.mkdir_p(ARTIFACTS_DIR + '/templates')
+
+    File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_GEM2RPM_TEST_TEMPLATE)
+    File.write(ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl', POLISHER_ERB_TEST_TEMPLATE)
   end
 
   it "should correctly create a gem based package" do
-     create_rpm_package(@gem, [''], :version => '0.3')
+     create_rpm_package(@gem_event1, "0.3")
      File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
      File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.3-1.#{BUILD_VERSION}.src.rpm").should == true
@@ -47,16 +62,13 @@ describe "EventHandlers" do
   end
 
   it "should correctly create a gem based package using template" do
-    File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_GEM2RPM_TEST_TEMPLATE)
-    create_rpm_package(@gem, [ARTIFACTS_DIR + '/templates/polisher.spec.tpl'], :version => '0.3')
+    create_rpm_package(@gem_event2, '0.3')
     File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
     File.read_all(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should =~ /.*by polisher.*/
   end
 
   it "should correctly create an upstream based project package" do
-    template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
-    File.write(template, POLISHER_ERB_TEST_TEMPLATE)
-    create_rpm_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
+    create_rpm_package(@project_event1, "2.0.1", :release => 3)
 
     File.exists?(ARTIFACTS_DIR + '/SOURCES/activerecord-2.0.1.tgz').should == true
     File.exists?(ARTIFACTS_DIR + '/SPECS/ruby-activerecord.spec').should == true
@@ -65,13 +77,13 @@ describe "EventHandlers" do
   end
 
   it "should correctly update repository" do
-     create_rpm_package(@gem, [''], :version => '0.3')
-     update_yum_repo(@gem, ['fedora-ruby'])
+     create_rpm_package(@gem_event1, '0.3')
+     update_yum_repo(@gem_event3, '0.3')
 
      template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
      File.write(template, POLISHER_ERB_TEST_TEMPLATE)
-     create_rpm_package(@project, [template], :name => "ruby-activerecord", :version => "2.0.1", :release => 3)
-     update_yum_repo(@project, ['fedora-ruby'])
+     create_rpm_package(@project_event1, "2.0.1", :release => 3)
+     update_yum_repo(@project_event2, '2.0')
 
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch').should == true
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata').should == true

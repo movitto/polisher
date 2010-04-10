@@ -26,7 +26,7 @@ module GemAdapter
       begin
         http = Net::HTTP.new(URI.parse(source.uri).host, 80)
         res = http.post(subscribe_path, data, headers)
-        raise RuntimeError if res.class == Net::HTTPNotFound
+        raise RuntimeError unless res.is_a?(Net::HTTPSuccess)
       rescue Exception => e
         raise RuntimeError, "could not subscribe to gem #{source.name} at #{source.uri}#{subscribe_path}"
       end

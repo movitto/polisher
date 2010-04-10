@@ -1,0 +1,22 @@
+- haml_tag(:sources) do
+  - @sources.each do |source|
+    - haml_tag(:source) do
+      - haml_tag(:id) do
+        = source.id
+      - haml_tag(:name) do
+        = source.name
+      - haml_tag(:uri) do
+        = source.uri
+      - haml_tag(:versions) do
+        - source.versions.each do |version|
+          - haml_tag(:version) do
+            - haml_tag(:id) do
+              = version
+            - sprojects = source.projects_sources_for_version(version)
+            - haml_tag(:projects) do
+              - sprojects.each do |ps|
+                - haml_tag(:project) do
+                  - haml_tag(:name) do
+                    = ps.project.name
+                  - haml_tag(:version) do
+                    = ps.project_version

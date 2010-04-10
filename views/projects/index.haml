@@ -1,87 +1,32 @@
-%h4
-  Projects
-
-%ul
-  - @projects.sort { |x,y| x.name <=> y.name }.each do |project|
-    %li
-      %h5
-      = project.name
-      %a{:href => url_for("/projects/destroy/#{project.id}"), :class => 'delete_project_link'}
-        (delete)
-      %br/
-      %h6
-        sources
-      %ul
-        - project.sources.each do |source|
-          %li
-            = source.uri
-            %a{:href => url_for("/project_sources/destroy/#{source.id}"), :class => 'delete_project_source_link'}
-              (delete)
-
-%h4
-  New Project
-
-%form{:id => 'create_project_form', :method => "post", :action => url_for("/projects/create")}
-  %table
-    %tr
-      %td
-        Name:
-      %td
-        %input{:type => "text", :id => "name", :name => "name"}
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-%h4
-  New Project Source
-
-%form{:id => 'create_project_source_form', :method => "post", :action => url_for("/project_sources/create")}
-  %table
-    %tr
-      %td
-        Project:
-      %td
-        %select{:id => "project_id", :name => "project_id"}
-          - @projects.each do |project|
-            %option{:id => project.id, :value => project.id}
-              = project.name
-
-    %tr
-      %td
-        URI:
-      %td
-        %input{:type => "text", :id => "uri", :name => "uri"}
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-%script{:type => "text/javascript"}
-  :plain
-    $('.delete_project_link').bind('click', function(e){
-       c = confirm("delete project?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result); });
-       }
-       return false;
-    });
-    $('.delete_project_source_link').bind('click', function(e){
-       c = confirm("delete project source?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result); });
-       }
-       return false;
-    });
-    $('#create_project_form').submit(function(e){
-      post_request(this.action,
-                   ({ name : $('#name').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });
-    $('#create_project_source_form').submit(function(e){
-      post_request(this.action,
-                   ({ project_id : $('#project_id').val(), uri : $('#uri').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });
+- haml_tag(:projects) do
+  - @projects.each do |project|
+    - haml_tag(:project) do
+      - haml_tag(:id) do
+        = project.id
+      - haml_tag(:name) do
+        = project.name
+      - haml_tag(:versions) do
+        - project.versions.each do |version|
+          - haml_tag(:version) do
+            - haml_tag(:id) do
+              = version
+            - psources = project.projects_sources_for_version(version)
+            - haml_tag(:sources) do
+              - psources.each do |ps|
+                - haml_tag(:source) do
+                  - haml_tag(:uri) do
+                    = ps.source.uri
+                  - haml_tag(:version) do
+                    = ps.source_version
+            - pevents  = project.events_for_version(version)
+            - haml_tag(:events) do
+              - pevents.each do |event|
+                - haml_tag(:event) do
+                  - haml_tag(:process) do
+                    = event.process
+                  - haml_tag(:process_options) do
+                    = event.process_options
+                  - haml_tag(:version_qualifier) do
+                    = event.version_qualifier
+                  - haml_tag(:version) do
+                    = event.version

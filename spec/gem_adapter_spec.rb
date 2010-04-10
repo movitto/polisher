@@ -55,7 +55,7 @@ describe "Polisher::GemAdapter" do
 
   it "should raise error if subscription target is invalid" do
     gem = Source.new :name => "polisher", :source_type => "gem", 
-                     :uri => "http://invalid.uri/downloads/polisher-0.3.gem"
+                     :uri => "http://non.existant/downloads/polisher-0.3.gem"
     lambda {
       Polisher::GemAdapter.subscribe(gem,  
                                      "http://projects.morsi.org/polisher/demo/gems/released/1", 

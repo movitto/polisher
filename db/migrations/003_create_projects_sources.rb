@@ -15,7 +15,10 @@ class CreateProjectsSources < ActiveRecord::Migration
     create_table :projects_sources do |t|
       t.references    :project
       t.references    :source
-      t.boolean       :primary_source
+      t.boolean       :primary_source, :default => false
+      t.string        :project_version
+      t.string        :source_version
+      t.string        :source_uri_params
     end
   end
 

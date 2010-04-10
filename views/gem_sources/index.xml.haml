@@ -1,9 +1,0 @@
-- haml_tag(:gem_sources) do
-  - @gem_sources.each do |source|
-    - haml_tag(:source) do
-      - haml_tag(:id) do
-        = source.id
-      - haml_tag(:name) do
-        = source.name
-      - haml_tag(:uri) do
-        = source.uri

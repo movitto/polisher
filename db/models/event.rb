@@ -58,8 +58,12 @@ class Event < ActiveRecord::Base
             (version_qualifier == "<=" && gv <= ev)
    end
 
-   # run the event
-   def run(params = {})
+   # Run the event, :version should be passed in via args; any other keys/values are optional
+   # and will be forwarded onto the event handler
+   def run(args = {})
+      version = args[:version]
+      raise ArgumentError, "must specify version when running event" if version.nil?
+
       handler = nil
       begin
         # covert process to method name
@@ -68,8 +72,8 @@ class Event < ActiveRecord::Base
         raise ArgumentError, "could not find event handler #{process}"
       end
 
-      # generate array of event params from project, semi-colon seperated process options, and options params
-      event_params  = [project, (process_options.nil? ? [] : process_options.split(';')), params]
+      # generate array of event params from project, the event itself, the version being run, and any optional params passed in
+      event_params  = [self, version, args]
 
       begin
         # invoke

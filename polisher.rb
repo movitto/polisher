@@ -7,9 +7,9 @@
 # it under the terms of the GNU Affero General Public License
 # as published by the Free Software Foundation, either version 3
 # of the License, or (at your option) any later version.
-# 
+#
 # You should have received a copy of the the GNU Affero
-# General Public License, along with Polisher. If not, see 
+# General Public License, along with Polisher. If not, see
 # <http://www.gnu.org/licenses/>
 
 # ruby gems
@@ -44,161 +44,22 @@ end
 # get polisher config
 POLISHER_CONFIG = YAML::load(File.open(Sinatra::Application.polisher_config))[Sinatra::Application.environment.to_s]
 
-##################################################################### Gems
- 
-# Redirect to /gems
-get '/' do redirect '/gems'; end
-
-get '/gems' do
-  @gem_sources   = GemSource.find :all
-  @gems      = ManagedGem.find :all
-  @processes = Event.processes 
-  @version_qualifiers = Event::VERSION_QUALIFIERS
-
-  haml :"gems/index"
-end
-
-get '/gems.xml' do
-  @gems      = ManagedGem.find :all
-  haml :"gems/index.xml", :layout => false
-end
-
-post '/gems/create' do
-  begin
-    if params[:name].nil? || params[:gem_source_id].nil? || params[:name] == "" || params[:gem_source_id] == ""
-      raise ArgumentError, "/gems/create received an invalid name(#{params[:name]}) or gem_source_id(#{params[:gem_source_id]})"
-    end
-
-    @gem = ManagedGem.new :name => params[:name], :gem_source_id => params[:gem_source_id]
-    @gem.save!
-    #@gem.subscribe
-
-    @result = {:success => true, :message => "successfully created gem #{@gem.name}", :errors => []}
-
-  rescue Exception => e
-    @result = {:success => false, :message => "failed to created gem due to error #{e}", :errors => [e]}
-    @gem.errors.each_full { |e| @result[:errors] << e } unless @gem.nil?
-  end
-
-  haml :"result.xml", :layout => false
-end
-
-delete '/gems/destroy/:id' do 
-  begin
-    if params[:id].nil?
-      raise ArgumentError, "/gems/destroy/:id received an invalid id(#{params[:id]})"
-    end
-
-    gem = ManagedGem.find(params[:id])
-    if gem.nil?
-      raise ArgumentError, "/gems/destroy/#{params[:id]} could not find gem"
-    end
-
-    gem_name = gem.name
-    ManagedGem.delete params[:id]
-    @result = {:success => true, :message => "successfully deleted gem #{gem_name}", :errors => []}
-
-  rescue Exception => e
-    @result = {:success => false, :message => "failed to delete gem due to error #{e}", :errors => [e]}
-  end
-
-  haml :"result.xml", :layout => false
-end
-
-post '/gems/released' do
-  begin
-    if params[:name].nil? || params[:version].nil? || params[:gem_uri].nil?
-      raise ArgumentError, "/gems/released received an invalid name(#{params[:name]}), version(#{params[:version]}) or gem_uri(#{params[:gem_uri]})"
-    end
-
-    name    = params[:name]
-    version = params[:version]
-    source_uri = ManagedGem.uri_to_source_uri(params[:gem_uri])
-
-    source = GemSource.find(:first, :conditions => ["uri = ?", source_uri])
-    if source.nil?
-      raise ArgumentError, "/gems/released could not find gem source from uri(#{source_uri}) constructed from gem_uri(#{params[:gem_uri]})"
-    end
-
-    gem    = source.gems.all.find { |gem| gem.name == name }
-    if gem.nil?
-      raise ArgumentError, "/gems/released could not find gem with name(#{name}) with source(#{source.name})"
-    end
-
-    events = gem.events.all.find_all { |event| event.applies_to_version?(version) }
-    events.each { |event| event.run(params) }
-    @result = {:success => true, :message => "successfully released gem #{gem.name}", :errors => []}
-
-  rescue Exception => e
-    @result = {:success => false, :message => "failed to release gem due to error #{e}", :errors => [e]}
-  end
-
-  haml :"result.xml", :layout => false
-end
-
-##################################################################### GemSources
-
-get '/gem_sources' do
-  @gem_sources = GemSource.find :all
-  haml :"gem_sources/index"
-end
-
-get '/gem_sources.xml' do
-  @gem_sources = GemSource.find :all
-  haml :"gem_sources/index.xml", :layout => false
-end
-
-post '/gem_sources/create' do
-  begin
-    if params[:name].nil? || params[:uri].nil? || params[:name] == "" || params[:uri] == ""
-      raise ArgumentError, "/gem_sources/create received an invalid name(#{params[:name]}) or uri(#{params[:uri]})"
-    end
-
-    @gem_source = GemSource.new :name => params[:name], :uri => params[:uri]
-    @gem_source.save!
-    @result = {:success => true, :message => "successfully created gem_source #{@gem_source.name}", :errors => []}
-
-  rescue Exception => e
-    @result = {:success => false, :message => "failed to created gem_source due to error #{e}", :errors => [e]}
-    @gem_source.errors.each_full { |e| @result[:errors] << e } unless @gem_source.nil?
-  end
-
-  haml :"result.xml", :layout => false
-end
-
-delete '/gem_sources/destroy/:id' do 
-  begin
-    if params[:id].nil?
-      raise ArgumentError, "/gems/destroy/:id received an invalid id(#{params[:id]})"
-    end
-
-    source = GemSource.find(params[:id])
-    if source.nil?
-      raise ArgumentError, "/gems/destroy/#{params[:id]} could not find source"
-    end
-
-    source_name = source.name
-    GemSource.delete params[:id]
-    @result = {:success => true, :message => "successfully deleted gem source #{source_name}", :errors => []}
-
-  rescue Exception => e
-    @result = {:success => false, :message => "failed to delete gem source due to error #{e}", :errors => [e]}
-
-  end
-
-  haml :"result.xml", :layout => false
-end
-
 ##################################################################### Projects
+
+# Redirect to /projects
+get '/' do redirect '/projects'; end
+
+get '/projects.html' do
+  @projects  = Project.find :all
+  @sources   = Source.find :all
+  @processes = Event.processes
+  @version_qualifiers = Event::VERSION_QUALIFIERS
+  haml :"projects/index.html"
+end
 
 get '/projects' do
   @projects = Project.find :all
-  haml :"projects/index"
-end
-
-get '/projects.xml' do
-  @projects = Project.find :all
-  haml :"projects/index.xml", :layout => false
+  haml :"projects/index", :layout => false
 end
 
 post '/projects/create' do
@@ -217,7 +78,7 @@ post '/projects/create' do
     @project.errors.each_full { |e| @result[:errors] << e } unless @project.nil?
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
 end
 
 delete '/projects/destroy/:id' do
@@ -239,7 +100,7 @@ delete '/projects/destroy/:id' do
     @result = {:success => false, :message => "failed to delete project due to error #{e}", :errors => [e]}
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
 end
 
 post '/projects/released' do
@@ -255,7 +116,7 @@ post '/projects/released' do
       raise ArgumentError, "/projects/released could not find project from name #{name}"
     end
 
-    events  = project.events.all.find_all { |event| event.applies_to_version?(version) }
+    events = project.events_for_version(version)
     events.each { |event| event.run(params) }
     @result = {:success => true, :message => "successfully released project #{project.name}", :errors => []}
 
@@ -263,81 +124,168 @@ post '/projects/released' do
     @result = {:success => false, :message => "failed to release project due to error #{e}", :errors => [e]}
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
 end
 
-##################################################################### Project Sources
+##################################################################### Sources
 
-post '/project_sources/create' do
+get '/sources.html' do
+  @sources  = Source.find :all
+  @projects = Project.find :all
+  haml :"sources/index.html"
+end
+
+get '/sources' do
+  @sources = Source.find :all
+  haml :"sources/index", :layout => false
+end
+
+post '/sources/create' do
   begin
-    if params[:uri].nil? || params[:project_id].nil?
-      raise ArgumentError, "/project_sources/create received an invalid uri(#{params[:uri]}) or project_id(#{params[:project_id]})"
+    if params[:uri].nil? || params[:name].nil? || params[:source_type].nil?
+      raise ArgumentError, "/sources/create received an invalid uri(#{params[:uri]}), name(#{params[:name]}) or source_type(#{params[:source_type]})"
     end
 
-    @source = ProjectSource.new(:uri => params[:uri], :project_id => params['project_id'])
+    @source = Source.new(:uri => params[:uri], :name => params['name'], :source_type => params[:source_type])
     @source.save!
 
-    @result = {:success => true, :message => "successfully created project source #{@source.uri}", :errors => []}
+    @result = {:success => true, :message => "successfully created source #{@source.uri}", :errors => []}
 
   rescue Exception => e
-    @result = {:success => false, :message => "failed to create project source due to error #{e}", :errors => [e]}
+    @result = {:success => false, :message => "failed to create source due to error #{e}", :errors => [e]}
     @source.errors.each_full { |e| @result[:errors] << e } unless @source.nil?
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
+end
+
+delete '/sources/destroy/:id' do
+  begin
+    if params[:id].nil?
+      raise ArgumentError, "/sources/destroy/:id received an invalid id(#{params[:id]})"
+    end
+
+    source = Source.find(params[:id])
+    if source.nil?
+      raise ArgumentError, "/sources/destroy/#{params[:id]} could not find source"
+    end
+
+    source_uri = source.uri
+    Source.delete params[:id]
+
+    @result = {:success => true, :message => "successfully deleted source #{source_uri}", :errors => []}
+
+  rescue Exception => e
+    @result = {:success => false, :message => "failed to delete source due to error #{e}", :errors => [e]}
+  end
+
+  haml :"result", :layout => false
+end
+
+post '/sources/released' do
+  begin
+    if params[:name].nil? || params[:version].nil?
+      raise ArgumentError, "/sources/released received an invalid name(#{params[:name]}) or version(#{params[:version]})"
+    end
+
+    name    = params[:name]
+    version = params[:version]
+    # we also have gem_uri for gem sources
+
+    source = Source.find(:first, :conditions => ["name = ?", name])
+    if source.nil?
+      raise ArgumentError, "/sources/released could not find source from name #{name}"
+    end
+
+    # find projects which include this source
+    source.projects_sources_for_version(version).each { |ps|
+      # if we can't determine project version, use gem version
+      project_version = ps.project_version.nil? ? version : ps.project_version
+
+      # invoke a release on those projects by running events
+      events = ps.project.events_for_version(project_version)
+      events.each { |event| event.run(params) }
+    }
+
+    @result = {:success => true, :message => "successfully released source #{name}", :errors => []}
+
+  rescue Exception => e
+    @result = {:success => false, :message => "failed to release source due to error #{e}", :errors => [e]}
+  end
+
+  haml :"result", :layout => false
+end
+
+##################################################################### ProjectsSources
+
+post '/projects_sources/create' do
+  begin
+    if params[:project_id].nil? ||  params[:source_id].nil?
+      raise ArgumentError, "/projects_sources/create received an invalid project_id(#{params[:project_id]}) or source_id(#{params[:source_id]})"
+    end
+
+    project = Project.find(params[:project_id])
+    source  = Source.find(params[:source_id])
+    if project.nil? || source.nil?
+      raise ArgumentError, "/projects_sources/create could not find project or source from ids"
+    end
+
+    ps = ProjectsSource.new :project => project, :source => source,
+                            :project_version   => params[:project_version],
+                            :source_version    => params[:source_version],
+                            :source_uri_params => params[:source_uri_params],
+                            :primary_source    => params[:primary_source]
+
+    ps.save!
+    @result = {:success => true, :message => "successfully created project source", :errors => []}
+
+  rescue Exception => e
+    @result = {:success => false, :message => "failed to create project source due to error #{e}", :errors => [e]}
+  end
+
+  haml :"result", :layout => false
 end
 
 delete '/project_sources/destroy/:id' do
   begin
     if params[:id].nil?
-      raise ArgumentError, "/project_sources/destroy/:id received an invalid id(#{params[:id]})"
+      raise ArgumentError, "/projects_sources/destroy/:id received an invalid id(#{params[:id]})"
     end
 
-    source = ProjectSource.find(params[:id])
-    if source.nil?
-      raise ArgumentError, "/project_sources/destroy/#{params[:id]} could not find source"
+    ps = ProjectsSource.find(params[:id])
+    if ps.nil?
+      raise ArgumentError, "/project_sources/destroy/#{params[:id]} could not find project source"
     end
 
-    source_uri = source.uri
-    ProjectSource.delete params[:id]
-
-    @result = {:success => true, :message => "successfully deleted project source #{source_uri}", :errors => []}
+    ProjectsSource.delete params[:id]
+    @result = {:success => true, :message => "successfully deleted project source", :errors => []}
 
   rescue Exception => e
     @result = {:success => false, :message => "failed to delete project source due to error #{e}", :errors => [e]}
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
 end
 
 ##################################################################### Events
 
 post '/events/create' do
   begin
-    if (params[:managed_gem_id].nil? && params[:project_id].nil?) ||  params[:process].nil?
-      raise ArgumentError, "/events/create received an invalid managed_gem_id(#{params[:managed_gem_id]}), project_id(#{params[:project_id]}), or process(#{params[:process]})"
+    if params[:project_id].nil? ||  params[:process].nil?
+      raise ArgumentError, "/events/create received an invalid project_id(#{params[:project_id]}) or process(#{params[:process]})"
     end
 
-    target_key = nil
-    target_obj = nil
-    if params.has_key?('managed_gem_id')
-      target_key = :managed_gem
-      target_obj = ManagedGem.find(params[:managed_gem_id])
-    elsif params.has_key?('project_id')
-      target_key = :project
-      target_obj = Project.find(params[:project_id])
+    project = Project.find(params[:project_id])
+    if project.nil?
+      raise ArgumentError, "/events/create could not find project w/ specified id(#{params[:project_id]})"
     end
 
-    if target_key.nil? || target_obj.nil?
-      raise ArgumentError, "/events/create could not find #{target_key} w/ specified params"
-    end
-
-    version           = (params[:gem_version]       != '*' ? params[:gem_version]       : nil)
+    version           = (params[:version]       != '*' ? params[:version]       : nil)
     version_qualifier = (params[:version_qualifier] != ''  ? params[:version_qualifier] : nil)
-    @event = Event.new  target_key => target_obj,
-                        :process => params[:process],
-                        :gem_version => version,
+    @event = Event.new  :project => project,
+                        :version => version,
                         :version_qualifier => version_qualifier,
+                        :process => params[:process],
                         :process_options => params[:process_options]
     @event.save!
 
@@ -348,10 +296,10 @@ post '/events/create' do
     @event.errors.each_full { |e| @result[:errors] << e } unless @event.nil?
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
 end
 
-delete '/events/destroy/:id' do 
+delete '/events/destroy/:id' do
   begin
     if params[:id].nil?
       raise ArgumentError, "/events/destroy/:id received an invalid id(#{params[:id]})"
@@ -369,5 +317,5 @@ delete '/events/destroy/:id' do
     @result = {:success => false, :message => "failed to delete event due to error #{e}", :errors => [e]}
   end
 
-  haml :"result.xml", :layout => false
+  haml :"result", :layout => false
 end
