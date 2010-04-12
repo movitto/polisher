@@ -5,14 +5,16 @@
 # it under the terms of the GNU Affero General Public License
 # as published by the Free Software Foundation, either version 3
 # of the License, or (at your option) any later version.
-# 
+#
 # You should have received a copy of the the GNU Affero
-# General Public License, along with Polisher. If not, see 
+# General Public License, along with Polisher. If not, see
 # <http://www.gnu.org/licenses/>
 
 class ProjectsSource < ActiveRecord::Base
   belongs_to :project
   belongs_to :source
+
+  # TODO destroy source on deletion only if no other projects_sources sharing the source exist
 
   validates_uniqueness_of :source_id, :scope => [:project_id, :project_version]
 

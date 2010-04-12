@@ -36,8 +36,8 @@ describe "Polisher::Project" do
     project = Project.create! :name => 'project-dl-test100'
 
     # see FIXME in Project::download_to
-    source1 = Source.create!  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/files/jruby/jffi.spec', :source_type => 'file'
-    source2 = Source.create!  :name => 'joni-spec', :uri => 'http://mo.morsi.org/files/jruby/joni.spec', :source_type => 'file'
+    source1 = Source.create!  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/files/jruby/jffi.spec', :source_type => 'spec'
+    source2 = Source.create!  :name => 'joni-spec', :uri => 'http://mo.morsi.org/files/jruby/joni.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.create! :project => project, :source => source1
     ps2 = ProjectsSource.create! :project => project, :source => source2, :project_version => "1.5"
@@ -53,8 +53,8 @@ describe "Polisher::Project" do
     FileUtils.mkdir_p(ARTIFACTS_DIR)
 
     project = Project.new :name => 'project-dl-test100'
-    source1 = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'file'
-    source2 = Source.new  :name => 'joni-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec', :source_type => 'file'
+    source1 = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'spec'
+    source2 = Source.new  :name => 'joni-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.new :project => project, :source => source1, :project_version => "1.6", :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project, :source => source2, :project_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
@@ -80,9 +80,9 @@ describe "Polisher::Project" do
 
   it "should return all projects_sources for the specified version" do
     project = Project.new :name => 'project-dl-test100'
-    source1 = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'file'
-    source2 = Source.new  :name => 'joni-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec', :source_type => 'file'
-    source3 = Source.new  :name => 'jruby-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jruby.spec', :source_type => 'file'
+    source1 = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'spec'
+    source2 = Source.new  :name => 'joni-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec', :source_type => 'spec'
+    source3 = Source.new  :name => 'jruby-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jruby.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.new :project => project, :source => source1, :project_version => '1.6', :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project, :source => source2, :project_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
@@ -98,9 +98,9 @@ describe "Polisher::Project" do
 
   it "should return all sources for the specified version with formatted uris" do
     project = Project.new :name => 'project-dl-test100'
-    source1 = Source.new  :name => 'jffi-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec',  :source_type => 'file'
-    source2 = Source.new  :name => 'joni-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec',  :source_type => 'file'
-    source3 = Source.new  :name => 'jruby-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jruby.spec', :source_type => 'file'
+    source1 = Source.new  :name => 'jffi-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec',  :source_type => 'spec'
+    source2 = Source.new  :name => 'joni-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec',  :source_type => 'spec'
+    source3 = Source.new  :name => 'jruby-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jruby.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.new :project => project, :source => source1, :project_version => "1.6", :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project, :source => source2, :project_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
@@ -135,9 +135,9 @@ describe "Polisher::Project" do
     event2  = Event.new :version_qualifier => ">", :version => "1.6"
     project.events << event1 << event2
 
-    source1 = Source.new  :name => 'jffi-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec',  :source_type => 'file'
-    source2 = Source.new  :name => 'joni-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec',  :source_type => 'file'
-    source3 = Source.new  :name => 'jruby-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jruby.spec', :source_type => 'file'
+    source1 = Source.new  :name => 'jffi-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec',  :source_type => 'spec'
+    source2 = Source.new  :name => 'joni-spec',  :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec',  :source_type => 'spec'
+    source3 = Source.new  :name => 'jruby-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jruby.spec', :source_type => 'spec'
     ps1 = ProjectsSource.new :project => project, :source => source1, :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project, :source => source2, :project_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
     ps3 = ProjectsSource.new :project => project, :source => source3, :project_version => "1.7", :source_uri_params => "cluster=jruby;dir=files"
@@ -182,7 +182,7 @@ describe "Polisher::Source" do
   it "should return filename generated from uri" do
      source = Source.new(
         :uri => 'http://mo.morsi.org/files/jruby/joni-123.spec?addition=foo&params=bar',
-        :name => "joni-spec", :source_type => "file")
+        :name => "joni-spec", :source_type => "spec")
      source.filename.should == "joni-123.spec"
   end
 
@@ -190,7 +190,7 @@ describe "Polisher::Source" do
     project1 = Project.new :name => 'project-src-p100'
     project2 = Project.new :name => 'project-src-p101'
     project3 = Project.new :name => 'project-src-p102'
-    source = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'file'
+    source = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.new :project => project1, :source => source, :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project2, :source => source, :project_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
@@ -208,7 +208,7 @@ describe "Polisher::Source" do
     project1 = Project.new :name => 'project-src-p100'
     project2 = Project.new :name => 'project-src-p101'
     project3 = Project.new :name => 'project-src-p102'
-    source = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'file'
+    source = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.new :project => project1, :source => source, :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project2, :source => source, :source_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
@@ -230,7 +230,7 @@ describe "Polisher::Source" do
     project1 = Project.new :name => 'project-src-p100'
     project2 = Project.new :name => 'project-src-p101'
     project3 = Project.new :name => 'project-src-p102'
-    source = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'file'
+    source = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'spec'
 
     ps1 = ProjectsSource.new :project => project1, :source => source, :source_uri_params => "cluster=jruby;filetype=spec"
     ps2 = ProjectsSource.new :project => project2, :source => source, :source_version => "1.5", :source_uri_params => "cluster=jruby;dir=files"
@@ -258,7 +258,7 @@ describe "Polisher::Source" do
 
      source = Source.new(
         :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
-        :name => "joni-spec", :source_type => "file")
+        :name => "joni-spec", :source_type => "spec")
      path = source.download_to(:dir => ARTIFACTS_DIR)
      File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
      FileUtils.rm(ARTIFACTS_DIR + '/joni.spec')
@@ -274,7 +274,7 @@ describe "Polisher::Source" do
 
      source = Source.new(
         :uri => 'http://mo.morsi.org/files/%{group}/%{name}.spec',
-        :name => "joni-spec", :source_type => 'file')
+        :name => "joni-spec", :source_type => 'spec')
      path = source.download_to(:dir => ARTIFACTS_DIR, :group => "jruby", :name => "joni")
      File.size?(ARTIFACTS_DIR + '/joni.spec').should_not be_nil
      FileUtils.rm(ARTIFACTS_DIR + '/joni.spec')
@@ -297,7 +297,7 @@ describe "Polisher::Source" do
 
      source = Source.new(
         :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
-        :name => 'invalid-source2', :source_type => 'file')
+        :name => 'invalid-source2', :source_type => 'spec')
      lambda {
        path = source.download_to(:dir => '/')
      }.should raise_error(RuntimeError)

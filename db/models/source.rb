@@ -23,9 +23,9 @@ class Source < ActiveRecord::Base
   validates_presence_of   :uri
   validates_uniqueness_of :uri
 
-  # TODO split 'file' source type into 'archive', 'patch', etc?
+  # TODO additional source types
 
-  SOURCE_TYPES = ['file', 'gem', 'git_repo']
+  SOURCE_TYPES = ['archive', 'patch', 'spec', 'gem', 'file', 'git_repo']
 
   validates_inclusion_of :source_type, :in => SOURCE_TYPES
 

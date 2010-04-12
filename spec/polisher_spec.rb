@@ -189,7 +189,7 @@ describe "Polisher" do
 
     expect = "<sources>"
     Source.find(:all).each { |s|
-      expect += "<source><id>#{s.id}</id><name>#{s.name}</name><uri>#{s.uri}</uri><versions>"
+      expect += "<source><id>#{s.id}</id><name>#{s.name}</name><source_type>#{s.source_type}</source_type><uri>#{s.uri}</uri><versions>"
       s.versions.each { |v|
         expect += "<version><id>#{v}</id><projects>"
         s.projects_sources_for_version(version).each { |ps|
