@@ -3,4 +3,3 @@
 - More event handlers, generic handler interface, 
   workflow integration to automatically chain handlers together
 - multiple user support, RBAC and ACL mechanisms
-- simple command line utility / api interface
