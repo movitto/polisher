@@ -1,24 +1,25 @@
-%h4
+%h1
   Projects
 
 %ul
   - @projects.sort { |x,y| x.name <=> y.name }.each do |project|
     %li
-      %h5
+      %h2
       = project.name
       %a{:href => url_for("/projects/destroy/#{project.id}"), :class => 'delete_project_link'}
         (delete)
       %br/
-      %h6
+      %h3
         versions
       %ul
         - project.versions.each do |version|
           - pevents  = project.events_for_version(version)
           - psources = project.projects_sources_for_version(version)
           %li
-            %h7
+            %h4
               = version
-            %h8
+            %br/
+            %h5
               sources
             %ul
               - psources.each do |ps|
@@ -27,7 +28,8 @@
                   = ps.source_version
                   %a{:href => url_for("/projects_sources/destroy/#{ps.id}"), :class => 'delete_project_source_link'}
                     (delete)
-      %h6
+                  %br/
+      %h3
         events
       %ul
         - project.events.each do |event|
@@ -38,7 +40,7 @@
             %a{:href => url_for("/events/destroy/#{event.id}"), :class => 'delete_event_link'}
               (delete)
 
-%h4
+%h1
   New Project
 
 %form{:id => 'create_project_form', :method => "post", :action => url_for("/projects/create")}
@@ -53,7 +55,7 @@
       %td
         %input{:type => "submit", :value => "submit"}
 
-%h4
+%h1
   New Project Source
 
 %form{:id => 'create_project_source_form', :method => "post", :action => url_for("/projects_sources/create")}
@@ -79,7 +81,7 @@
       %td
         %input{:type => "submit", :value => "submit"}
 
-%h4 New Event
+%h1 New Event
 
 %form{:id => 'create_event_form', :method => "post", :action => url_for("/events/create")}
   %table

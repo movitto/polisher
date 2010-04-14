@@ -2,4 +2,6 @@
 - Syncronization locks needed! (on all shared artifacts, db objects)
 - More event handlers, generic handler interface, 
   workflow integration to automatically chain handlers together
-- multiple user support, RBAC and ACL mechanisms
+- Multiple user support, RBAC and ACL mechanisms
+- Project dependencies (w/ versions)
+- Integrate mock into build events to build packages in multiple seperate environments

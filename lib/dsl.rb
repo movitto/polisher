@@ -43,13 +43,27 @@ class Project
   end
 
   # Add a method to project for each source type, eg add_archive, add_path, add_repo, etc.
-  # Simply dispatch to source handler dsl method
-  ::Source::SOURCE_TYPES.each { |st|
-    define_method "add_#{st}".intern do |args|
-      src = source(args)
-      yield src if block_given?
+  # TODO maintain as source_types are added (or put this this in a seperate module)
+  # XXX ran into this when doing it metaprogramatically http://coderrr.wordpress.com/2008/10/29/using-define_method-with-blocks-in-ruby-18/
+  def add_archive args = {}, &block; add_source('archive', args, &block); end
+  def add_patch   args = {}, &block; add_source('patch',   args, &block); end
+  def add_gem     args = {}, &block; add_source('gem',     args, &block); end
+  def add_file    args = {}, &block; add_source('file',    args, &block); end
+
+  def add_source  type, args = {}, &block
+    args[:source_type] = type # automatically set the source type
+    src = source(args)
+
+    # Dispatch source to caller blocker to register specific project/source versions.
+    if !block.nil?
+      block.call src
+
+    # If no block is given register default */* project/source version
+    # TODO should this execute regardless of whether there is a block or not, eg only if no project/source versions were created/exist (need to perform a new query to get that info)
+    else
+      version nil, :corresponds_to => src
     end
-  }
+  end
 
   # Create Project from xml and return
   def self.from_xml(xml_str)
@@ -107,20 +121,24 @@ class Project
   # Associate specified project version w/ corresponding source version if specified,
   # else if not just return self
   def version(version, args = {})
-    unless args.has_key?(:corresponds_to)
-      @project_version = version
-      return self
-    end
+    version = nil if version == "*"
+    @project_version = version
+    return self unless args.has_key?(:corresponds_to)
+
+    # dispatch to source.version so we don't have to implement twice
     source = args[:corresponds_to]
-    args = {:project_id => id,     :project_version => version,
-            :source_id  => source.id, :source_version  => source.source_version, :source_uri_params => source.uri_args}
-    RestClient.post("#{$polisher_uri}/projects_sources/create", args) { |response| Polisher.handle_response('created project source', response) }
+    source.version source.source_version, :corresponds_to => self
   end
 
   # Test fire project released event for specified version
   def released(version, params = {})
-     rparams = { :name => name, :version => version}.merge(params)
-     RestClient.post("#{$polisher_uri}/projects/released", rparams ) { |response| Polisher.handle_response('released project', response) }
+     resource = RestClient::Resource.new("#{$polisher_uri}/projects/released", :timeout => 1000)  # give event handlers plenty of time to run
+
+     sparams = "name=#{name}&version=#{version}"
+     params.each { |k,v| sparams += "&#{k}=#{v}" }
+     resource.post sparams do |response|
+       Polisher.handle_response('released project', response)
+     end
   end
 end
 
@@ -132,10 +150,13 @@ class Source
   # Means to store source version and optional uri params to be used when setting up project sources
   attr_accessor :source_version, :uri_args
 
+  # Means to store primary_source value when creating projects sources
+  attr_accessor :primary_source
+
   def initialize(args = {})
-    args = { :id => nil, :name => nil, :uri => nil, :source_type => nil}.merge(args)
-    @id = args[:id] ; @name = args[:name] ; @uri = args[:uri] ; @source_type = args[:source_type]
-    @uri_args = ''
+    args = { :id => nil, :name => nil, :uri => nil, :source_type => nil, :primary_source => false}.merge(args)
+    @id = args[:id] ; @name = args[:name] ; @uri = args[:uri] ; @source_type = args[:source_type] ; @primary_sources = args[:primary_source]
+    @uri_args = '' ; @primary_source = false
   end
 
   # Create Source from xml and return
@@ -172,9 +193,10 @@ class Source
   # Associate specified project source w/ corresponding source version if specified,
   # else if not just return self
   def version(version, args = {})
+    version = nil if version == "*"
     project = args.delete(:corresponds_to)
 
-    @uri_args = args.keys.collect { |k| k.to_s + "=" + args[k].to_s }.join(";")
+    @uri_args = args.keys.collect { |k| k.to_s + "=" + args[k].to_s }.join(";") unless args.empty?
 
     if project.nil?
       @source_version = version
@@ -182,13 +204,14 @@ class Source
     end
 
     args = {:project_id => project.id, :project_version => project.project_version,
-            :source_id  => id,  :source_version  => version, :source_uri_params => @uri_args}
+            :source_id  => id,  :source_version  => version, :source_uri_params => @uri_args,
+            :primary_source => @primary_source }
     RestClient.post("#{$polisher_uri}/projects_sources/create", args) { |response| Polisher.handle_response('created project source', response) }
   end
 
   # Set source as primary in project/source associations
   def is_the_primary_source
-    @uri_args[:primary_source] = true
+    @primary_source = true
   end
 end
 
@@ -246,6 +269,7 @@ def source(args = {})
   src = Polisher::Source.new args
   src.create
   src = source(args)
+  src.primary_source = args[:primary_source] if args.has_key?(:primary_source) # XXX ugly hack
   yield src if block_given?
   return src
 end

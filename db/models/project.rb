@@ -51,6 +51,7 @@ class Project < ActiveRecord::Base
   # Get the project primary source
   def primary_source
     ps = projects_sources.all.find { |ps| ps.primary_source }
+    # TODO special case if no sources are marked as primary, grab the first ? (also in primary_source_for_version below)
     return ps.nil? ? nil : ps.source
   end
 

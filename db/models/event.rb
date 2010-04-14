@@ -35,6 +35,8 @@ class Event < ActiveRecord::Base
    validates_inclusion_of :version_qualifier, :in => VERSION_QUALIFIERS, 
                           :if => Proc.new { |e| !e.version_qualifier.nil? }
 
+   # nil version and version_qualifier indicates event will be run for _all_ versons
+
    validates_presence_of :version,
                          :if => Proc.new { |e| !e.version_qualifier.nil? }
 
@@ -43,7 +45,7 @@ class Event < ActiveRecord::Base
 
    # determine if event applies to specified version
    def applies_to_version?(cversion)
-     raise ArgumentError, "valid event version #{version} and version #{cversion} required" unless version.class == String && cversion.class == String
+     raise ArgumentError, "valid event version #{version} and version #{cversion} required" unless (version.nil? || version.class == String) && cversion.class == String
 
      # XXX remove any non-numeric chars from the version number (eg if a version has a '-beta' or whatnot, not pretty but works for now
      cversion.gsub(/[a-zA-Z]*/, '')

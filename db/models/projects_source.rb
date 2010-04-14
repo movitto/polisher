@@ -10,11 +10,13 @@
 # General Public License, along with Polisher. If not, see
 # <http://www.gnu.org/licenses/>
 
+# FIXME rename to ProjectSourceVersion
+
 class ProjectsSource < ActiveRecord::Base
   belongs_to :project
   belongs_to :source
 
-  # TODO destroy source on deletion only if no other projects_sources sharing the source exist
+  # FIXME destroy source on deletion only if no other projects_sources sharing the source exist
 
   validates_uniqueness_of :source_id, :scope => [:project_id, :project_version]
 
@@ -22,4 +24,10 @@ class ProjectsSource < ActiveRecord::Base
   validates_uniqueness_of :primary_source,
                           :scope => [:project_id, :project_version],
                           :if    => Proc.new { |ps| ps.primary_source }
+
+  before_save :normalize_versions
+  def normalize_versions
+    self.project_version = nil if project_version == ""
+    self.source_version = nil if source_version == ""
+  end
 end

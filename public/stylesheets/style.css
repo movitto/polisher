@@ -46,17 +46,22 @@ form tr > td:first-child{
   padding-left: 10px;
 }
 
+#main h2,
+#main h3,
+#main h4,
 #main h5,
 #main h6{
+ font-size: 0.8em;
  display: inline;
 }
 
-#main h4{
+#main h1{
   margin-top: 25px;
   margin-bottom: 0;
 }
 
-#main h6{
+#main h3,
+#main h5{
   padding-left: 15px;
 }
 

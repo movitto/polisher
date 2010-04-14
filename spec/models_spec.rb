@@ -318,6 +318,15 @@ describe "Polisher::ProjectSource" do
     ps.primary_source.should be_false
    end
 
+   it "should default versions to nil" do
+    project = Project.create! :name => 'project-source-valid-testproj10'
+    source  = Source.create!  :name => 'project-source-valid-testsource10',
+                              :uri  => 'http://presvts098', :source_type => 'file'
+    ps = ProjectsSource.create! :project => project, :source => source, :project_version => "", :source_version => ""
+    ps.project_version.should be_nil
+    ps.source_version.should be_nil
+   end
+
    it "should not be valid if a project id/version is associated w/ a source multiple times" do
     project = Project.create! :name => 'project-source-valid-testproj1'
     source  = Source.create!  :name => 'project-source-valid-testsource1',
@@ -433,9 +442,11 @@ describe "Polisher::Event" do
 
    it "should raise error if trying to compare invalid versions" do
       event = Event.new
-      lambda {
-        event.applies_to_version?('0.5.2')
-      }.should raise_error(ArgumentError)
+
+      # nil event version and version_qualifier is permitted
+      #lambda {
+      #  event.applies_to_version?('0.5.2')
+      #}.should raise_error(ArgumentError)
 
       event.version = '0.7'
       lambda {

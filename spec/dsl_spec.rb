@@ -55,6 +55,8 @@
 ## Test firing events
 #project(:name => "ruby").released "1.8.6", :any => "other", :optional => "params"
 
+# TODO test primary_source in Polisher::Source, projects_sources/create rest call, and source method
+
 require File.dirname(__FILE__) + '/spec_helper'
 
 require 'thin'
@@ -71,11 +73,9 @@ describe "Polisher::DSL::Project" do
      proj = Polisher::Project.new :id => 20, :name => 'foobar'
      proj.id.should == 20
      proj.name.should == "foobar"
-
-     Source::SOURCE_TYPES.each { |st|
-       proj.method("add_#{st}".intern).should_not be_nil
-     }
    end
+
+   # TODO test add_archive, add_file, add_patch, add_gem
 
    it "should be instantiatable from xml" do
      # TODO versions, sources, events

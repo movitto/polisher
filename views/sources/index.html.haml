@@ -1,33 +1,35 @@
-%h4
+%h1
   Sources
 
 %ul
   - @sources.sort { |x,y| x.name <=> y.name }.each do |source|
     %li
-      %h5
+      %h2
       = source.name
       %a{:href => url_for("/sources/destroy/#{source.id}"), :class => 'delete_source_link'}
         (delete)
       %br/
-      %h6
+      %h3
         versions
       %ul
         - source.versions.each do |version|
           - sprojects = source.projects_sources_for_version(version)
           %li
-            %h7
+            %h4
               = version
-            %h8
+            %br/
+            %h5
               projects
             %ul
               - sprojects.each do |ps|
-                %h9
+                %h6
                   = ps.project.name
                   = ps.project_version
                   %a{:href => url_for("/projects_sources/destroy/#{ps.id}"), :class => 'delete_project_source_link'}
                     (delete)
+                  %br/
 
-%h4
+%h1
   New Source
 
 %form{:id => 'create_source_form', :method => "post", :action => url_for("/sources/create")}
@@ -48,7 +50,7 @@
       %td
         %input{:type => "submit", :value => "submit"}
 
-%h4
+%h1
   New Project Source
 
 %form{:id => 'create_project_source_form', :method => "post", :action => url_for("/projects_sources/create")}

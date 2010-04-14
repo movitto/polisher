@@ -38,7 +38,8 @@ def create_rpm_package(event, version, args = {})
    sfh = File.open(spec_file, "wb")
 
    # d/l projects sources into artifacts/SOURCES dir
-   project.download_to :dir => ARTIFACTS_DIR + "/SOURCES", :version => version
+   args.merge!({ :dir => ARTIFACTS_DIR + "/SOURCES", :version => version })
+   project.download_to args
 
    # read template if specified
    template = (template_file == '' || template_file.nil?) ? nil : File.read_all(template_file)
@@ -75,6 +76,8 @@ def create_rpm_package(event, version, args = {})
 
    # run rpmbuild on spec
    system("rpmbuild --define '_topdir #{ARTIFACTS_DIR}' -ba #{spec_file}")
+
+   # XXX FIXME this need to record all the rpms actually created
 end
 
 # Update specified yum repository w/ latest project artifact for specified version
@@ -85,10 +88,12 @@ def update_yum_repo(event, version, args = {})
    # create the repository dir if it doesn't exist
    Dir.mkdir repository unless File.directory? repository
 
-   # get the latest built rpm that matches gem name
+   # XXX FIXME this need to copy all the rpms created, including all that don't match the project name
+
+   # get the latest built rpm that matches the project name
    project_src_rpm = Dir[ARTIFACTS_DIR + "/RPMS/*/#{project.name}-#{version}*.rpm"].
                              collect { |fn| File.new(fn) }.
-                             sort { |f1,f2| file1.mtime <=> file2.mtime }.last
+                             sort { |f1,f2| f1.mtime <=> f2.mtime }.last
    project_tgt_rpm = "#{project.name}.rpm"
 
    # grab the architecture from the directory the src file resides in
