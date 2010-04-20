@@ -12,8 +12,8 @@
 
 class Project < ActiveRecord::Base
   # TODO on delete, destroy these
-  has_many :projects_sources
-  has_many :sources, :through => :projects_sources
+  has_many :project_source_versions
+  has_many :sources, :through => :project_source_versions
   has_many :events
 
   validates_presence_of   :name
@@ -21,7 +21,7 @@ class Project < ActiveRecord::Base
 
   # Download all project sources to specified :dir
   def download_to(args = {})
-    # If a version isn't specified we can't lookup projects_sources entry for uri substitutions
+    # If a version isn't specified we can't lookup project_source_versions entry for uri substitutions
     # FIXME the latter case in this ternary operator should be something along the lines of sources_for_all_versions returning those only associated w/ project_version = nil (also being sure to do uri_params substition) (?)
     srcs = args.has_key?(:version) ? sources_for_version(args[:version]) : sources
     srcs.each { |source| source.download_to args }
@@ -33,16 +33,16 @@ class Project < ActiveRecord::Base
     evnts.find_all { |event| event.applies_to_version?(version) }
   end
 
-  # Return all projects_sources associated w/ particular version of the project
-  def projects_sources_for_version(version)
-    psa = projects_sources
+  # Return all project_source_versions associated w/ particular version of the project
+  def project_source_versions_for_version(version)
+    psa = project_source_versions
     psa.find_all { |ps| ps.project_version == version || ps.project_version.nil? }
   end
 
   # Return all sources associated w/ particular version of the project, each w/ uri formatted
-  # using projects_sources source_uri_params
+  # using project_source_versions source_uri_params
   def sources_for_version(version)
-    projects_sources_for_version(version).collect { |ps|
+    project_source_versions_for_version(version).collect { |ps|
       ps.source.format_uri!(ps.source_uri_params)
       ps.source
     }
@@ -50,27 +50,27 @@ class Project < ActiveRecord::Base
 
   # Get the project primary source
   def primary_source
-    ps = projects_sources.all.find { |ps| ps.primary_source }
+    ps = project_source_versions.all.find { |ps| ps.primary_source }
     # TODO special case if no sources are marked as primary, grab the first ? (also in primary_source_for_version below)
     return ps.nil? ? nil : ps.source
   end
 
   # Set the project primary source
   def primary_source=(source)
-    projects_sources << ProjectsSource.new(:project => self, :source => source, :primary_source => true)
+    project_source_versions << ProjectSourceVersion.new(:project => self, :source => source, :primary_source => true)
     #source.save! ; save!
   end
 
   # Return the primary source for the specified version
   def primary_source_for_version(version)
-    ps = projects_sources_for_version(version).find { |ps| ps.primary_source }
+    ps = project_source_versions_for_version(version).find { |ps| ps.primary_source }
     ps.source.format_uri!(ps.source_uri_params) unless ps.nil?
     return ps.nil? ? nil : ps.source
   end
 
   # Return all versions which we have configured this project for
   def versions
-    (projects_sources.collect { |ps| ps.project_version } +
+    (project_source_versions.collect { |ps| ps.project_version } +
      events.collect { |e| e.version }).uniq - [nil]
   end
 end

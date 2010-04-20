@@ -10,7 +10,7 @@
           - haml_tag(:version) do
             - haml_tag(:id) do
               = version
-            - psources = project.projects_sources_for_version(version)
+            - psources = project.project_source_versions_for_version(version)
             - haml_tag(:sources) do
               - psources.each do |ps|
                 - haml_tag(:source) do

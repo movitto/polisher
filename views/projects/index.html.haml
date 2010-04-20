@@ -14,7 +14,7 @@
       %ul
         - project.versions.each do |version|
           - pevents  = project.events_for_version(version)
-          - psources = project.projects_sources_for_version(version)
+          - psources = project.project_source_versions_for_version(version)
           %li
             %h4
               = version
@@ -26,7 +26,7 @@
                 %h9
                   = ps.source.uri
                   = ps.source_version
-                  %a{:href => url_for("/projects_sources/destroy/#{ps.id}"), :class => 'delete_project_source_link'}
+                  %a{:href => url_for("/project_source_versions/destroy/#{ps.id}"), :class => 'delete_project_source_link'}
                     (delete)
                   %br/
       %h3
@@ -58,7 +58,7 @@
 %h1
   New Project Source
 
-%form{:id => 'create_project_source_form', :method => "post", :action => url_for("/projects_sources/create")}
+%form{:id => 'create_project_source_form', :method => "post", :action => url_for("/project_source_versions/create")}
   %table
     %tr
       %td

@@ -55,7 +55,7 @@
 ## Test firing events
 #project(:name => "ruby").released "1.8.6", :any => "other", :optional => "params"
 
-# TODO test primary_source in Polisher::Source, projects_sources/create rest call, and source method
+# TODO test primary_source in Polisher::Source, project_source_versions/create rest call, and source method
 
 require File.dirname(__FILE__) + '/spec_helper'
 
@@ -152,9 +152,9 @@ describe "Polisher::DSL::Project" do
 
      lambda {
        proj1.version "1.6.5", :corresponds_to => src1
-     }.should change(ProjectsSource, :count).by(1)
+     }.should change(ProjectSourceVersion, :count).by(1)
 
-    ProjectsSource.find(:first, :conditions => ['project_version = ? AND source_version = ? AND project_id = ? AND source_id = ? AND source_uri_params = ?',
+    ProjectSourceVersion.find(:first, :conditions => ['project_version = ? AND source_version = ? AND project_id = ? AND source_id = ? AND source_uri_params = ?',
                                                 "1.6.5", "2.0.12", proj.id, src.id, 'some=attr']).should_not be_nil
    end
 
@@ -232,9 +232,9 @@ describe "Polisher::DSL::Source" do
 
     lambda {
       src1.version "1.6.5", :some => "attr", :other => 'thing', :corresponds_to => proj1
-    }.should change(ProjectsSource, :count).by(1)
+    }.should change(ProjectSourceVersion, :count).by(1)
 
-    ps = ProjectsSource.find(:first, :conditions => ['source_version = ? AND project_version = ? AND project_id = ? AND source_id = ?',
+    ps = ProjectSourceVersion.find(:first, :conditions => ['source_version = ? AND project_version = ? AND project_id = ? AND source_id = ?',
                                                      "1.6.5", "2.0.12", proj.id, src1.id])
     ps.should_not be_nil
     uri_args = ps.source_uri_params.split(";")

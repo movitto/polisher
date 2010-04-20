@@ -10,9 +10,9 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-class CreateProjectsSources < ActiveRecord::Migration
+class CreateProjectSourceVersions < ActiveRecord::Migration
   def self.up
-    create_table :projects_sources do |t|
+    create_table :project_source_versions do |t|
       t.references    :project
       t.references    :source
       t.boolean       :primary_source, :default => false
@@ -23,6 +23,6 @@ class CreateProjectsSources < ActiveRecord::Migration
   end
 
   def self.down
-    drop_table :projects_sources
+    drop_table :project_source_versions
   end
 end

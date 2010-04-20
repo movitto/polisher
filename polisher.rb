@@ -198,7 +198,7 @@ post '/sources/released' do
     end
 
     # find projects which include this source
-    source.projects_sources_for_version(version).each { |ps|
+    source.project_source_versions_for_version(version).each { |ps|
       # if we can't determine project version, use gem version
       project_version = ps.project_version.nil? ? version : ps.project_version
 
@@ -216,21 +216,21 @@ post '/sources/released' do
   haml :"result", :layout => false
 end
 
-##################################################################### ProjectsSources
+##################################################################### ProjectSourceVersions
 
-post '/projects_sources/create' do
+post '/project_source_versions/create' do
   begin
     if params[:project_id].nil? ||  params[:source_id].nil?
-      raise ArgumentError, "/projects_sources/create received an invalid project_id(#{params[:project_id]}) or source_id(#{params[:source_id]})"
+      raise ArgumentError, "/project_source_versions/create received an invalid project_id(#{params[:project_id]}) or source_id(#{params[:source_id]})"
     end
 
     project = Project.find(params[:project_id])
     source  = Source.find(params[:source_id])
     if project.nil? || source.nil?
-      raise ArgumentError, "/projects_sources/create could not find project or source from ids"
+      raise ArgumentError, "/project_source_versions/create could not find project or source from ids"
     end
 
-    ps = ProjectsSource.new :project => project, :source => source,
+    ps = ProjectSourceVersion.new :project => project, :source => source,
                             :project_version   => params[:project_version],
                             :source_version    => params[:source_version],
                             :source_uri_params => params[:source_uri_params],
@@ -246,18 +246,18 @@ post '/projects_sources/create' do
   haml :"result", :layout => false
 end
 
-delete '/project_sources/destroy/:id' do
+delete '/project_source_versions/destroy/:id' do
   begin
     if params[:id].nil?
-      raise ArgumentError, "/projects_sources/destroy/:id received an invalid id(#{params[:id]})"
+      raise ArgumentError, "/project_source_versions/destroy/:id received an invalid id(#{params[:id]})"
     end
 
-    ps = ProjectsSource.find(params[:id])
+    ps = ProjectSourceVersion.find(params[:id])
     if ps.nil?
-      raise ArgumentError, "/project_sources/destroy/#{params[:id]} could not find project source"
+      raise ArgumentError, "/project_source_versions/destroy/#{params[:id]} could not find project source"
     end
 
-    ProjectsSource.delete params[:id]
+    ProjectSourceVersion.delete params[:id]
     @result = {:success => true, :message => "successfully deleted project source", :errors => []}
 
   rescue Exception => e

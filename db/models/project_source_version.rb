@@ -10,13 +10,11 @@
 # General Public License, along with Polisher. If not, see
 # <http://www.gnu.org/licenses/>
 
-# FIXME rename to ProjectSourceVersion
-
-class ProjectsSource < ActiveRecord::Base
+class ProjectSourceVersion < ActiveRecord::Base
   belongs_to :project
   belongs_to :source
 
-  # FIXME destroy source on deletion only if no other projects_sources sharing the source exist
+  # FIXME destroy source on deletion only if no other project_source_versions sharing the source exist
 
   validates_uniqueness_of :source_id, :scope => [:project_id, :project_version]
 

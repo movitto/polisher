@@ -34,7 +34,7 @@ class Project
   # Project attributes
   attr_accessor :id, :name
 
-  # Means to store project version to be used when setting up projects_sources
+  # Means to store project version to be used when setting up project_source_versions
   attr_accessor :project_version
 
   def initialize(args = {})
@@ -206,7 +206,7 @@ class Source
     args = {:project_id => project.id, :project_version => project.project_version,
             :source_id  => id,  :source_version  => version, :source_uri_params => @uri_args,
             :primary_source => @primary_source }
-    RestClient.post("#{$polisher_uri}/projects_sources/create", args) { |response| Polisher.handle_response('created project source', response) }
+    RestClient.post("#{$polisher_uri}/project_source_versions/create", args) { |response| Polisher.handle_response('created project source', response) }
   end
 
   # Set source as primary in project/source associations

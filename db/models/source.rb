@@ -14,8 +14,8 @@ require 'curl' # requires 'curb' package
 
 class Source < ActiveRecord::Base
   # TODO on delete, destroy these
-  has_many :projects_sources
-  has_many :projects, :through => :projects_sources
+  has_many :project_source_versions
+  has_many :projects, :through => :project_source_versions
 
   validates_presence_of   :name
   validates_uniqueness_of :name
@@ -34,20 +34,20 @@ class Source < ActiveRecord::Base
     URI::parse(uri).path.split('/').last
   end
 
-  # Return all projects_sources associated w/ particular version of the source
-  def projects_sources_for_version(version)
-    psa = projects_sources
+  # Return all project_source_versions associated w/ particular version of the source
+  def project_source_versions_for_version(version)
+    psa = project_source_versions
     psa.find_all { |ps| ps.source_version == version || ps.source_version.nil? }
   end
 
   # Return all projects associated w/ particular version of the source
   def projects_for_version(version)
-    projects_sources_for_version(version).collect { |ps| ps.project }
+    project_source_versions_for_version(version).collect { |ps| ps.project }
   end
 
   # Return all versions which we have configured this project for
   def versions
-    (projects_sources.collect { |ps| ps.source_version }).uniq - [nil]
+    (project_source_versions.collect { |ps| ps.source_version }).uniq - [nil]
   end
 
   # Swap any occurence of the specified hash

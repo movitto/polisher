@@ -42,7 +42,7 @@ describe "Polisher" do
       expect += "<project><id>#{p.id}</id><name>#{p.name}</name><versions>"
       p.versions.each { |v|
         expect += "<version><id>#{v}</id><sources>"
-        p.projects_sources_for_version(v).each { |ps|
+        p.project_source_versions_for_version(v).each { |ps|
           expect += "<source><uri>#{ps.source.uri}</uri><version>#{ps.source_version}</version></source>"
         }
         expect += "</sources><events>"
@@ -192,7 +192,7 @@ describe "Polisher" do
       expect += "<source><id>#{s.id}</id><name>#{s.name}</name><source_type>#{s.source_type}</source_type><uri>#{s.uri}</uri><versions>"
       s.versions.each { |v|
         expect += "<version><id>#{v}</id><projects>"
-        s.projects_sources_for_version(version).each { |ps|
+        s.project_source_versions_for_version(version).each { |ps|
           expect += "<project><name>#{ps.project.name}</name><version>#{ps.project_version}</version></project>"
         }
         expect += "</projects></version>"
@@ -289,7 +289,7 @@ describe "Polisher" do
                            :version_qualifier => '=',
                            :version => "5.6"
 
-      # since we don't specify source_id / project_id in projects_sources above, the project
+      # since we don't specify source_id / project_id in project_source_versions above, the project
       # version used to trigger the events will be the same as the source version
       post '/sources/released', :name => 'mysource',
                                 :version => "5.6"
@@ -335,9 +335,9 @@ describe "Polisher" do
     source  = Source.create!  :name => "create-project_source-testsource1", :source_type => 'file', :uri => 'http://cpsts1'
 
     lambda do
-      post '/projects_sources/create', :project_id => project.id, :source_id => source.id
-    end.should change(ProjectsSource, :count).by(1)
-    ps = ProjectsSource.find(:first, :conditions => [ 'project_id = ? AND source_id = ?', project.id, source.id])
+      post '/project_source_versions/create', :project_id => project.id, :source_id => source.id
+    end.should change(ProjectSourceVersion, :count).by(1)
+    ps = ProjectSourceVersion.find(:first, :conditions => [ 'project_id = ? AND source_id = ?', project.id, source.id])
     ps.should_not be_nil
 
     last_response.should be_ok
@@ -349,28 +349,28 @@ describe "Polisher" do
     source  = Source.create!  :name => "create-project_source-testsource2", :source_type => 'file', :uri => 'http://cpsts10'
 
     lambda do
-      post '/projects_sources/create', :project_id => project.id
-    end.should_not change(ProjectsSource, :count)
+      post '/project_source_versions/create', :project_id => project.id
+    end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
 
     lambda do
-      post '/projects_sources/create', :source_id => source.id
-    end.should_not change(ProjectsSource, :count)
+      post '/project_source_versions/create', :source_id => source.id
+    end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
   end
 
   it "should return an error if project source project_id or source_id is invalid" do
     lambda do
-      post '/projects_sources/create', :project_id => 'abc'
-    end.should_not change(ProjectsSource, :count)
+      post '/project_source_versions/create', :project_id => 'abc'
+    end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
 
     lambda do
-      post '/projects_sources/create', :source_id => 'def'
-    end.should_not change(ProjectsSource, :count)
+      post '/project_source_versions/create', :source_id => 'def'
+    end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
   end
@@ -378,20 +378,20 @@ describe "Polisher" do
   it "should allow project source deletions" do
     project = Project.create! :name => "create-project_source-test20"
     source  = Source.create!  :name => "create-project_source-testsource42", :source_type => 'file', :uri => 'http://cpsts20'
-    post '/projects_sources/create', :project_id => project.id, :source_id => source.id
+    post '/project_source_versions/create', :project_id => project.id, :source_id => source.id
 
-    ps = ProjectsSource.find(:first, :conditions => [ 'source_id = ? AND project_id = ?', source.id, project.id])
+    ps = ProjectSourceVersion.find(:first, :conditions => [ 'source_id = ? AND project_id = ?', source.id, project.id])
     lambda do
-      delete "/project_sources/destroy/#{ps.id}"
-    end.should change(ProjectsSource, :count).by(-1)
+      delete "/project_source_versions/destroy/#{ps.id}"
+    end.should change(ProjectSourceVersion, :count).by(-1)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "true"
   end
 
   it "should return an error if project source id to delete is invalid" do
     lambda do
-      delete "/project_sources/destroy/abc"
-    end.should_not change(ProjectsSource, :count)
+      delete "/project_source_versions/destroy/abc"
+    end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
   end
