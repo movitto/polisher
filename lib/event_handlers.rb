@@ -33,12 +33,21 @@ def create_rpm_package(event, version, args = {})
    project       = event.project
    template_file = event.process_options
 
+   args.merge!({ :dir => ARTIFACTS_DIR + "/SOURCES", :version => version })
+
    # open a handle to the spec file to write
    spec_file = ARTIFACTS_DIR + "/SPECS/#{project.name}.spec"
    sfh = File.open(spec_file, "wb")
 
+   # if we've already d/l'd the sources and the rpm is built, skip the rest of the event execution (incorporate md5sums in the future)
+   built = !Dir[ARTIFACTS_DIR + "/RPMS/*/#{project.name}-#{version}*.rpm"].empty?
+   project.sources_for_version(version).each { |src|
+     src.format_uri! args
+     built = false unless File.exists?(ARTIFACTS_DIR + "/SOURCES/#{src.filename}")
+   }
+   return if built
+
    # d/l projects sources into artifacts/SOURCES dir
-   args.merge!({ :dir => ARTIFACTS_DIR + "/SOURCES", :version => version })
    project.download_to args
 
    # read template if specified
@@ -97,6 +106,9 @@ def update_yum_repo(event, version, args = {})
      prefix + p.split.last + "-" + version
    }
 
+   # do not actually generate the repo unless a rpm is copied over
+   updated_repo = false
+
    # copy the latest built rpms that match the packages
    packages.each { |pkg|
      pkg_file = Dir[ARTIFACTS_DIR + "/RPMS/*/#{pkg}*.rpm"].
@@ -113,12 +125,15 @@ def update_yum_repo(event, version, args = {})
        # copy project into repo/arch dir, creating it if it doesn't exist
        arch_dir = repository + "/#{arch}"
        Dir.mkdir arch_dir unless File.directory? arch_dir
-       File.write(arch_dir + "/#{pkg_file_name}", File.read_all(pkg_file.path))
+       unless File.exists?(arch_dir + "/#{pkg_file_name}") # TODO need to incorporate a md5sum comparison here
+         updated_repo = true
+         File.write(arch_dir + "/#{pkg_file_name}", File.read_all(pkg_file.path))
+       end
      end
    }
 
    # run createrepo to finalize the repository
-   system("createrepo #{repository}")
+   system("createrepo #{repository}") if updated_repo
 end
 
 end #module EventHandlers
