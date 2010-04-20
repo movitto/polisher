@@ -6,29 +6,22 @@
     %li
       %h2
       = project.name
-      %a{:href => url_for("/projects/destroy/#{project.id}"), :class => 'delete_project_link'}
-        (delete)
       %br/
       %h3
-        versions
+        sources
       %ul
         - project.versions.each do |version|
           - pevents  = project.events_for_version(version)
           - psources = project.project_source_versions_for_version(version)
           %li
             %h4
-              = version
+              = "version " + version
             %br/
-            %h5
-              sources
             %ul
               - psources.each do |ps|
-                %h9
+                %li
                   = ps.source.uri
                   = ps.source_version
-                  %a{:href => url_for("/project_source_versions/destroy/#{ps.id}"), :class => 'delete_project_source_link'}
-                    (delete)
-                  %br/
       %h3
         events
       %ul
@@ -37,136 +30,3 @@
             = event.process.humanize
             = (event.version != "" ? " on version #{event.version_qualifier} #{event.version}" : "")
             = (event.process_options != "" ? " with options #{event.process_options}" : "")
-            %a{:href => url_for("/events/destroy/#{event.id}"), :class => 'delete_event_link'}
-              (delete)
-
-%h1
-  New Project
-
-%form{:id => 'create_project_form', :method => "post", :action => url_for("/projects/create")}
-  %table
-    %tr
-      %td
-        Name:
-      %td
-        %input{:type => "text", :id => "name", :name => "name"}
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-%h1
-  New Project Source
-
-%form{:id => 'create_project_source_form', :method => "post", :action => url_for("/project_source_versions/create")}
-  %table
-    %tr
-      %td
-        Project:
-      %td
-        %select{:id => "project_id", :name => "project_id"}
-          - @projects.each do |project|
-            %option{:id => project.id, :value => project.id}
-              = project.name
-    %tr
-      %td
-        Source:
-      %td
-        %select{:id => "source_id", :name => "source_id"}
-          - @sources.each do |source|
-            %option{:id => source.id, :value => source.id}
-              = source.name
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-%h1 New Event
-
-%form{:id => 'create_event_form', :method => "post", :action => url_for("/events/create")}
-  %table
-    %tr
-      %td
-        Select Project:
-      %td{:colspan => "2"}
-        %select{:id => "project_id", :name => "project_id"}
-          - @projects.each do |project|
-            %option{:id => project.id, :value => project.id}
-              = project.name
-
-    %tr
-      %td
-        Select Process:
-      %td{:colspan => "2"}
-        %select{:id => "process", :name => "process"}
-          - @processes.each do |process|
-            %option{:id => process, :value => process}
-              = process.humanize
-
-    %tr
-      %td
-        Run On Version:
-      %td
-        %select{:id => "version_qualifier", :name => "version_qualifier"}
-          - @version_qualifiers.each do |qualifier|
-            %option{:id => qualifier, :value => qualifier}
-              = qualifier
-
-      %td
-        %input{:type => "text", :id => "version", :name => "version", :value => '*'}
-
-    %tr
-      %td
-        Optional Params:
-      %td{:colspan => "2"}
-        %input{:type => "text", :id => "process_options", :name => "process_options"}
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-
-
-%script{:type => "text/javascript"}
-  :plain
-    $('.delete_project_link').bind('click', function(e){
-       c = confirm("delete project?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result); });
-       }
-       return false;
-    });
-    $('.delete_project_source_link').bind('click', function(e){
-       c = confirm("delete project source?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result); });
-       }
-       return false;
-    });
-    $('.delete_event_link').bind('click', function(e){
-       c = confirm("delete event?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result) });
-       }
-       return false;
-    });
-    $('#create_project_form').submit(function(e){
-      post_request(this.action,
-                   ({ name : $('#name').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });
-    $('#create_project_source_form').submit(function(e){
-      post_request(this.action,
-                   ({ project_id : $('#project_id').val(), uri : $('#uri').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });
-    $('#create_event_form').submit(function(e){
-      post_request(this.action,
-                   ({ project_id   : $('#project_id').val(),    process : $('#process').val(),
-                     version_qualifier : $('#version_qualifier').val(), version : $('#version').val(),
-                     process_options   : $('#process_options').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });

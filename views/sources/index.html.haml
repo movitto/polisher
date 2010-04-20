@@ -6,8 +6,6 @@
     %li
       %h2
       = source.name
-      %a{:href => url_for("/sources/destroy/#{source.id}"), :class => 'delete_source_link'}
-        (delete)
       %br/
       %h3
         versions
@@ -25,83 +23,4 @@
                 %h6
                   = ps.project.name
                   = ps.project_version
-                  %a{:href => url_for("/project_source_versions/destroy/#{ps.id}"), :class => 'delete_project_source_link'}
-                    (delete)
                   %br/
-
-%h1
-  New Source
-
-%form{:id => 'create_source_form', :method => "post", :action => url_for("/sources/create")}
-  %table
-    %tr
-      %td
-        Name:
-      %td
-        %input{:type => "text", :id => "name", :name => "name"}
-
-    %tr
-      %td
-        URI:
-      %td
-        %input{:type => "text", :id => "uri", :name => "uri"}
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-%h1
-  New Project Source
-
-%form{:id => 'create_project_source_form', :method => "post", :action => url_for("/project_source_versions/create")}
-  %table
-    %tr
-      %td
-        Project:
-      %td
-        %select{:id => "project_id", :name => "project_id"}
-          - @projects.each do |project|
-            %option{:id => project.id, :value => project.id}
-              = project.name
-    %tr
-      %td
-        Source:
-      %td
-        %select{:id => "source_id", :name => "source_id"}
-          - @sources.each do |source|
-            %option{:id => source.id, :value => source.id}
-              = source.name
-
-    %tr
-      %td
-        %input{:type => "submit", :value => "submit"}
-
-
-%script{:type => "text/javascript"}
-  :plain
-    $('.delete_source_link').bind('click', function(e){
-       c = confirm("delete source?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result); });
-       }
-       return false;
-    });
-    $('.delete_project_source_link').bind('click', function(e){
-       c = confirm("delete project source?")
-       if(c){
-         delete_request(this.href, function(result) { handle_request_result(result); });
-       }
-       return false;
-    });
-    $('#create_source_form').submit(function(e){
-      post_request(this.action,
-                   ({ name : $('#name').val(), uri : $('#uri').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });
-    $('#create_project_source_form').submit(function(e){
-      post_request(this.action,
-                   ({ project_id : $('#project_id').val(), uri : $('#uri').val()}),
-                   function(result) { handle_request_result(result) });
-      return false;
-    });
