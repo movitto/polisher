@@ -74,6 +74,8 @@ describe "EventHandlers" do
     File.exists?(ARTIFACTS_DIR + '/SPECS/ruby-activerecord.spec').should == true
     File.exists?(ARTIFACTS_DIR + "/SRPMS/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.src.rpm").should == true
     File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/another-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
   end
 
   it "should correctly update repository" do
@@ -87,8 +89,10 @@ describe "EventHandlers" do
 
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch').should == true
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata').should == true
-     File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch/rubygem-polisher.rpm').should == true
-     File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch/ruby-activerecord.rpm').should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/ruby-activerecord-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/another-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/repomd.xml').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/primary.xml.gz').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/other.xml.gz').should == true
@@ -228,6 +232,19 @@ database tables and classes together for business objects, like Customer or
 Subscription, that can find, save, and destroy themselves without resorting
 to manual SQL.
 
+%package subpkg
+Summary: Test sub package
+Group:   Development/Languages
+
+%package -n another-subpkg
+Summary: Another test sub package
+Group:   Development/Languages
+
+%description subpkg
+Test subpackage
+
+%description -n another-subpkg
+Another est subpackage
 
 %prep
 %setup -q -n %{rname}-%{version}
@@ -256,4 +273,13 @@ rm -rf $RPM_BUILD_ROOT
 %{ruby_sitelib}/active_record.rb
 %{ruby_sitelib}/active_record
 %doc README CHANGELOG examples/
+
+%files subpkg
+%defattr(-,root,root,-)
+%doc README
+
+%files -n another-subpkg
+%defattr(-,root,root,-)
+%doc CHANGELOG
+
 }

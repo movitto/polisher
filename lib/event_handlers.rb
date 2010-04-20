@@ -76,8 +76,6 @@ def create_rpm_package(event, version, args = {})
 
    # run rpmbuild on spec
    system("rpmbuild --define '_topdir #{ARTIFACTS_DIR}' -ba #{spec_file}")
-
-   # XXX FIXME this need to record all the rpms actually created
 end
 
 # Update specified yum repository w/ latest project artifact for specified version
@@ -88,22 +86,36 @@ def update_yum_repo(event, version, args = {})
    # create the repository dir if it doesn't exist
    Dir.mkdir repository unless File.directory? repository
 
-   # XXX FIXME this need to copy all the rpms created, including all that don't match the project name
+   packages = [project.name + "-" + version]
 
-   # get the latest built rpm that matches the project name
-   project_src_rpm = Dir[ARTIFACTS_DIR + "/RPMS/*/#{project.name}-#{version}*.rpm"].
-                             collect { |fn| File.new(fn) }.
-                             sort { |f1,f2| f1.mtime <=> f2.mtime }.last
-   project_tgt_rpm = "#{project.name}.rpm"
+   # XXX real hacky way of getting all the packages corresponding to the project
+   # FIXME need a better solution here as any macros in the package names won't get executed properly
+   spec_file = ARTIFACTS_DIR + "/SPECS/#{project.name}.spec"
+   packages += File.read_all(spec_file).scan(/%package.*/).collect { |p|
+     ps = p.split
+     prefix = ps[ps.size-2] == "-n" ? "" : (project.name + "-")
+     prefix + p.split.last + "-" + version
+   }
 
-   # grab the architecture from the directory the src file resides in
-   project_arch = project_src_rpm.path.split('.')
-   project_arch = project_arch[project_arch.size-2]
+   # copy the latest built rpms that match the packages
+   packages.each { |pkg|
+     pkg_file = Dir[ARTIFACTS_DIR + "/RPMS/*/#{pkg}*.rpm"].
+                  collect { |fn| File.new(fn) }.
+                  sort { |f1,f2| f1.mtime <=> f2.mtime }.last
 
-   # copy project into repo/arch dir, creating it if it doesn't exist
-   arch_dir = repository + "/#{project_arch}"
-   Dir.mkdir arch_dir unless File.directory? arch_dir
-   File.write(arch_dir + "/#{project_tgt_rpm}", project_src_rpm.read)
+     unless pkg_file.nil?
+       # grab the architecture from the directory the src file resides in
+       arch = pkg_file.path.split('.')
+       arch = arch[arch.size-2]
+
+       pkg_file_name = pkg_file.path.split('/').last
+
+       # copy project into repo/arch dir, creating it if it doesn't exist
+       arch_dir = repository + "/#{arch}"
+       Dir.mkdir arch_dir unless File.directory? arch_dir
+       File.write(arch_dir + "/#{pkg_file_name}", File.read_all(pkg_file.path))
+     end
+   }
 
    # run createrepo to finalize the repository
    system("createrepo #{repository}")

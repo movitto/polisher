@@ -5,3 +5,4 @@
 - Multiple user support, RBAC and ACL mechanisms
 - Project dependencies (w/ versions)
 - Integrate mock into build events to build packages in multiple seperate environments
+- Use ~/.gem/credentials
