@@ -15,6 +15,15 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 describe "Polisher::Project" do
+  before(:each) do
+    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+    FileUtils.mkdir_p(ARTIFACTS_DIR)
+  end
+
+  after(:each) do
+    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+  end
+
   it "should not be valid if name is missing" do
     project = Project.new :name => 'foo'
     project.should be_valid
@@ -30,9 +39,6 @@ describe "Polisher::Project" do
   end
 
   it "should download all sources" do
-    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
-    FileUtils.mkdir_p(ARTIFACTS_DIR)
-
     project = Project.create! :name => 'project-dl-test100'
 
     # see FIXME in Project::download_to
@@ -49,9 +55,6 @@ describe "Polisher::Project" do
   end
 
   it "should download all sources for specified version" do
-    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
-    FileUtils.mkdir_p(ARTIFACTS_DIR)
-
     project = Project.new :name => 'project-dl-test100'
     source1 = Source.new  :name => 'jffi-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/jffi.spec', :source_type => 'spec'
     source2 = Source.new  :name => 'joni-spec', :uri => 'http://mo.morsi.org/%{dir}/%{cluster}/joni.spec', :source_type => 'spec'
@@ -152,6 +155,15 @@ describe "Polisher::Project" do
 end
 
 describe "Polisher::Source" do
+  before(:each) do
+    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+    FileUtils.mkdir_p(ARTIFACTS_DIR)
+  end
+
+  after(:each) do
+    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+  end
+
   it "should not be valid if name, source_type, or uri is missing or invalid" do
       source = Source.new :uri => 'uri', :name => "foo", :source_type => "gem"
       source.should be_valid
@@ -253,9 +265,6 @@ describe "Polisher::Source" do
   end
 
   it "should be downloadable" do
-     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
-     FileUtils.mkdir_p(ARTIFACTS_DIR)
-
      source = Source.new(
         :uri => 'http://mo.morsi.org/files/jruby/joni.spec',
         :name => "joni-spec", :source_type => "spec")
@@ -269,9 +278,6 @@ describe "Polisher::Source" do
   end
 
   it "should permit a parameterized download" do
-     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
-     FileUtils.mkdir_p(ARTIFACTS_DIR)
-
      source = Source.new(
         :uri => 'http://mo.morsi.org/files/%{group}/%{name}.spec',
         :name => "joni-spec", :source_type => 'spec')
@@ -285,9 +291,6 @@ describe "Polisher::Source" do
   end
 
   it "should raise an exception if download source uri or destination path is invalid" do
-     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
-     FileUtils.mkdir_p(ARTIFACTS_DIR)
-
      source = Source.new(
         :uri => 'http://invalid.uri',
         :name => 'invalid-source1', :source_type => 'file')

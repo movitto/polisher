@@ -43,14 +43,18 @@ describe "EventHandlers" do
   end
  
   before(:each) do
-     FileUtils.rm_rf(ARTIFACTS_DIR)
-     FileUtils.mkdir_p(ARTIFACTS_DIR + '/repos')
-     FileUtils.mkdir_p(ARTIFACTS_DIR + '/SOURCES')
-     FileUtils.mkdir_p(ARTIFACTS_DIR + '/SPECS')
-     FileUtils.mkdir_p(ARTIFACTS_DIR + '/templates')
+    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
+    FileUtils.mkdir_p(ARTIFACTS_DIR + '/repos')
+    FileUtils.mkdir_p(ARTIFACTS_DIR + '/SOURCES')
+    FileUtils.mkdir_p(ARTIFACTS_DIR + '/SPECS')
+    FileUtils.mkdir_p(ARTIFACTS_DIR + '/templates')
 
     File.write(ARTIFACTS_DIR + '/templates/polisher.spec.tpl', POLISHER_GEM2RPM_TEST_TEMPLATE)
     File.write(ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl', POLISHER_ERB_TEST_TEMPLATE)
+  end
+
+  after(:each) do
+    FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
   end
 
   it "should correctly create a gem based package" do
