@@ -36,3 +36,20 @@ def create_missing_polisher_dirs(args = {})
      FileUtils.mkdir_p(dir) unless File.directory? dir
    }
 end
+
+class String
+  
+  # Parse/split string around element delimiters (;) and 
+  # key/value delimiters (=) and convert to hash.
+  def to_h
+    ret = {}
+    split(';').each { |p| u = p.split('='); ret[u[0]] = u[1] }
+    ret
+  end
+
+  # Convert hash into string
+  def self.from_h(hash)
+    hash.keys.collect { |k| k.to_s + "=" + hash[k].to_s }.join(";")
+  end
+
+end

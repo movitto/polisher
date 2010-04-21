@@ -116,8 +116,8 @@ post '/projects/released' do
       raise ArgumentError, "/projects/released could not find project from name #{name}"
     end
 
-    events = project.events_for_version(version)
-    events.each { |event| event.run(params) }
+    # process project
+    project.released_version(version, params)
     @result = {:success => true, :message => "successfully released project #{project.name}", :errors => []}
 
   rescue Exception => e
@@ -199,12 +199,11 @@ post '/sources/released' do
 
     # find projects which include this source
     source.project_source_versions_for_version(version).each { |ps|
-      # if we can't determine project version, use gem version
+      # if we can't determine project version, use source version
       project_version = ps.project_version.nil? ? version : ps.project_version
 
-      # invoke a release on those projects by running events
-      events = ps.project.events_for_version(project_version)
-      events.each { |event| event.run(params) }
+      # invoke a release on the project
+      ps.project.released_version(version, params)
     }
 
     @result = {:success => true, :message => "successfully released source #{name}", :errors => []}
@@ -262,6 +261,58 @@ delete '/project_source_versions/destroy/:id' do
 
   rescue Exception => e
     @result = {:success => false, :message => "failed to delete project source due to error #{e}", :errors => [e]}
+  end
+
+  haml :"result", :layout => false
+end
+
+##################################################################### ProjectDependencies
+
+post '/project_dependencies/create' do
+  begin
+    if params[:project_id].nil? ||  params[:depends_on_project_id].nil?
+      raise ArgumentError, "/project_dependencies/create received an invalid project_id(#{params[:project_id]}) or depends_on_project_id(#{params[:depends_on_project_id]})"
+    end
+
+    project = Project.find(params[:project_id])
+    depends_on = Project.find(params[:depends_on_project_id])
+    if project.nil? || depends_on.nil?
+      raise ArgumentError, "/project_dependencies/create could not find projects w/ specified ids(#{params[:project_id]}/#{params[:depends_on_project_id]})"
+    end
+
+    project_version    = (params[:project_version]    != '*' ? params[:project_version]   : nil)
+    depends_on_version = (params[:depends_on_project_version] != '*' ? params[:depends_on_project_version]: nil)
+    @pd = ProjectDependency.new  :project => project, :depends_on_project => depends_on,
+                                 :project_version => project_version, :depends_on_project_version => depends_on_version,
+                                 :depends_on_project_params => params[:depends_on_project_params]
+    @pd.save!
+
+    @result = {:success => true, :message => "successfully created project dependency", :errors => []}
+
+  rescue Exception => e
+    @result = {:success => false, :message => "failed to created project dependency due to error #{e}", :errors => [e]}
+    @pd.errors.each_full { |e| @result[:errors] << e } unless @event.nil?
+  end
+
+  haml :"result", :layout => false
+end
+
+delete '/project_dependencies/destroy/:id' do
+  begin
+    if params[:id].nil?
+      raise ArgumentError, "/project_dependencies/destroy/:id received an invalid id(#{params[:id]})"
+    end
+
+    pd = ProjectDependency.find(params[:id])
+    if pd.nil?
+      raise ArgumentError, "/project_dependencies/destroy/#{params[:id]} could not find project dependency"
+    end
+
+    ProjectDependency.delete params[:id]
+    @result = {:success => true, :message => "successfully deleted project dependency", :errors => []}
+
+  rescue Exception => e
+    @result = {:success => false, :message => "failed to delete project dependency due to error #{e}", :errors => [e]}
   end
 
   haml :"result", :layout => false

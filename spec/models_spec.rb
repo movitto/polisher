@@ -38,6 +38,52 @@ describe "Polisher::Project" do
     project.should_not be_valid
   end
 
+  it "should provide access to all dependencies and dependent projects" do
+    project1 = Project.create! :name => "project-dependency-tree1"
+    project2 = Project.create! :name => "project-dependency-tree2"
+    project3 = Project.create! :name => "project-dependency-tree3"
+    project4 = Project.create! :name => "project-dependency-tree4"
+    project5 = Project.create! :name => "project-dependency-tree5"
+
+    pd1 = ProjectDependency.create! :project => project2, :depends_on_project => project1
+    pd2 = ProjectDependency.create! :project => project3, :depends_on_project => project2
+    pd3 = ProjectDependency.create! :project => project4, :depends_on_project => project2
+    pd4 = ProjectDependency.create! :project => project4, :depends_on_project => project5
+
+    deps = project1.dependencies
+    deps.size.should == 0
+    depts = project1.dependents
+    depts.size.should == 1
+    depts[0].project.id.should == project2.id
+
+    deps = project2.dependencies
+    deps.size.should == 1
+    deps[0].depends_on_project.id.should == project1.id
+    depts = project2.dependents
+    depts.size.should == 2
+    depts[0].project.id.should == project3.id
+    depts[1].project.id.should == project4.id
+
+    deps = project3.dependencies
+    deps.size.should == 1
+    deps[0].depends_on_project.id.should == project2.id
+    depts = project3.dependents
+    depts.size.should == 0
+
+    deps = project4.dependencies
+    deps.size.should == 2
+    deps[0].depends_on_project.id.should == project2.id
+    deps[1].depends_on_project.id.should == project5.id
+    depts = project4.dependents
+    depts.size.should == 0
+
+    deps = project5.dependencies
+    deps.size.should == 0
+    depts = project5.dependents
+    depts.size.should == 1
+    depts[0].project.id.should == project4.id
+  end
+
   it "should download all sources" do
     project = Project.create! :name => 'project-dl-test100'
 
@@ -132,6 +178,22 @@ describe "Polisher::Project" do
     primary_src.name.should == source2.name
   end
 
+  it "should provide access to all dependencies for the specified version" do
+    project1 = Project.create! :name => "project-dependency-tree10"
+    project2 = Project.create! :name => "project-dependency-tree20"
+    project3 = Project.create! :name => "project-dependency-tree30"
+    project4 = Project.create! :name => "project-dependency-tree40"
+
+    pd1 = ProjectDependency.create! :project => project1, :depends_on_project => project2, :project_version => "1.0.0"
+    pd2 = ProjectDependency.create! :project => project1, :depends_on_project => project3, :project_version => "2.0.0"
+    pd2 = ProjectDependency.create! :project => project1, :depends_on_project => project4
+
+    deps = project1.dependencies_for_version("1.0.0")
+    deps.size.should == 2
+    deps[0].depends_on_project.id.should == project2.id
+    deps[1].depends_on_project.id.should == project4.id
+  end
+
   it "should return all versions which the project is configured for" do
     project = Project.new :name => 'project-dl-test100'
     event1  = Event.new :version_qualifier => "=", :version => "1.5"
@@ -146,11 +208,70 @@ describe "Polisher::Project" do
     ps3 = ProjectSourceVersion.new :project => project, :source => source3, :project_version => "1.7", :source_uri_params => "cluster=jruby;dir=files"
     project.project_source_versions << ps1 << ps2 << ps3
 
+    projectd = Project.new :name => 'project-version-test99'
+    project.project_dependencies << ProjectDependency.new(:project => project, :depends_on_project => projectd, :project_version => "9.9")
+
     versions = project.versions
-    versions.size.should == 3
+    versions.size.should == 4
     versions.include?("1.5").should be_true
     versions.include?("1.6").should be_true
     versions.include?("1.7").should be_true
+    versions.include?("9.9").should be_true
+  end
+
+  it "should trigger dependencies and events upon release" do
+    project   = Project.create :name => 'project-release-test-199'
+
+    Event.create :project => project,
+                 :process => "project_released_test_handlerAAA",
+                 :version_qualifier => '=',
+                 :version => "5.6"
+
+    Event.create :project => project,
+                 :process => "project_released_test_handlerBBB",
+                 :version_qualifier => '>',
+                 :version => "7.9"
+
+    projectd1 = Project.create :name => 'project-release-test-299'
+    Event.create :project => projectd1,
+                 :process => "project_released_test_handlerDDD"
+    Event.create :project => projectd1,
+                 :process => "project_released_test_handlerEEE",
+                 :version_qualifier => "=",
+                 :version => "1.9"
+
+    projectd2 = Project.create :name => 'project-release-test-399'
+    Event.create :project => projectd2,
+                 :process => "project_released_test_handlerFFF",
+                 :version_qualifier => "=",
+                 :version => "1.9"
+    Event.create :project => projectd2,
+                 :process => "project_released_test_handlerGGG",
+                 :version_qualifier => "=",
+                 :version => "6.5"
+
+    projectd3 = Project.create :name => 'project-release-test-499'
+    Event.create :project => projectd3,
+                 :process => "project_released_test_handlerCCC"
+
+    pd1 = ProjectDependency.new :project => project, :depends_on_project => projectd1, :depends_on_project_params => "jim=bo;john=mark"
+    pd2 = ProjectDependency.new :project => project, :depends_on_project => projectd2, :project_version => "5.6", :depends_on_project_version => "6.5"
+    pd3 = ProjectDependency.new :project => project, :depends_on_project => projectd3, :project_version => "7.9"
+    project.project_dependencies << pd1 << pd2 << pd3
+
+    project.released_version("5.6", :joe => 'bob', :sam => 'sue')
+
+    $project_released_test_handler_flags.include?('AAA').should be_true
+    $project_released_test_handler_flags.include?('BBB').should be_false
+    $project_released_test_handler_flags.include?('CCC').should be_false
+    $project_released_test_handler_flags.include?('DDD').should be_true
+    $project_released_test_handler_flags.include?('EEE').should be_true
+    $project_released_test_handler_flags.include?('FFF').should be_false
+    $project_released_test_handler_flags.include?('GGG').should be_true
+    $project_released_test_handler_flags.include?('joe=bob').should be_true
+    $project_released_test_handler_flags.include?('sam=sue').should be_true
+    $project_released_test_handler_flags.include?('jim=bo').should be_true
+    $project_released_test_handler_flags.include?('john=mark').should be_true
   end
 end
 
@@ -311,7 +432,7 @@ describe "Polisher::Source" do
   end
 end
 
-describe "Polisher::ProjectSource" do
+describe "Polisher::ProjectSourceVersion" do
 
    it "should default primary_source to false" do
     project = Project.create! :name => 'project-source-valid-testproj0'
@@ -356,6 +477,50 @@ describe "Polisher::ProjectSource" do
 
     ps2.valid?.should be_false
    end
+
+end
+
+describe "Polisher::ProjectDependency" do
+
+  it "should default versions to nil" do
+    project1 = Project.create! :name => 'project-dep-valid-testproj10'
+    project2 = Project.create! :name => 'project-dep-valid-testproj20'
+
+    pd = ProjectDependency.create! :project => project1, :depends_on_project => project2
+    pd.project_version.should be_nil
+    pd.depends_on_project_version.should be_nil
+  end
+
+  it "should not be valid if missing project or depends_on_project" do
+    project1 = Project.create! :name => 'project-dep-valid-testproj30'
+    project2 = Project.create! :name => 'project-dep-valid-testproj40'
+
+    pd = ProjectDependency.new
+    pd.should_not be_valid
+
+     
+    pd = ProjectDependency.new :project => project1
+    pd.should_not be_valid
+
+    pd = ProjectDependency.new :depends_on_project => project2
+    pd.should_not be_valid
+
+    pd = ProjectDependency.new :project => project1, :depends_on_project => project2
+    pd.should be_valid
+  end
+
+  it "should not be valid if project/depends_on_project/project_version/depends_on_project_version are not unique" do
+    project1 = Project.create! :name => 'project-dep-valid-testproj50'
+    project2 = Project.create! :name => 'project-dep-valid-testproj60'
+
+    pd = ProjectDependency.create! :project => project1, :depends_on_project => project2, :project_version => "1.0.0", :depends_on_project_version => "2.0.1"
+
+    pd2 = ProjectDependency.new :project => project1, :depends_on_project => project2, :project_version => "1.0.0", :depends_on_project_version => "2.0.1"
+    pd2.should_not be_valid
+
+    pd2.depends_on_project_version = "2.0.2"
+    pd2.should be_valid
+  end
 
 end
 
@@ -518,3 +683,38 @@ end
 def error_generating_method(event, version, args = {})
   raise RuntimeError
 end
+
+$project_released_test_handler_flags = []
+
+def project_released_test_handlerAAA(event, version, args = {})
+  $project_released_test_handler_flags << "AAA"
+end
+
+def project_released_test_handlerBBB(event, version, args = {})
+  $project_released_test_handler_flags << "BBB"
+end
+
+def project_released_test_handlerCCC(event, version, args = {})
+  $project_released_test_handler_flags << "CCC"
+end
+
+def project_released_test_handlerDDD(event, version, args = {})
+  $project_released_test_handler_flags << "DDD"
+
+  args.each { |k,v|
+    $project_released_test_handler_flags << "#{k}=#{v}"
+  }
+end
+
+def project_released_test_handlerEEE(event, version, args = {})
+  $project_released_test_handler_flags << "EEE"
+end
+
+def project_released_test_handlerFFF(event, version, args = {})
+  $project_released_test_handler_flags << "FFF"
+end
+
+def project_released_test_handlerGGG(event, version, args = {})
+  $project_released_test_handler_flags << "GGG"
+end
+

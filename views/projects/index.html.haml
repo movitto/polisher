@@ -30,3 +30,9 @@
             = event.process.humanize
             = (event.version != "" ? " on version #{event.version_qualifier} #{event.version}" : "")
             = (event.process_options != "" ? " with options #{event.process_options}" : "")
+      %h3
+        dependencies
+      %ul
+        - project.project_dependencies.each do |dep|
+          %li
+            = "version " + dep.project_version.to_s + " depens on " + dep.depends_on_project.name + "(" + dep.depends_on_project_version.to_s + ")"

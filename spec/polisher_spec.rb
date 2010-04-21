@@ -52,7 +52,15 @@ describe "Polisher" do
                      "<version_qualifier>#{e.version_qualifier}</version_qualifier>" +
                      "<version>#{e.version}</version></event>")
         }
-        expect += "</events></version>"
+        expect += "</events><dependencies>"
+        p.dependencies_for_version(v).each { |d|
+          expect += ("<dependency><project_id>#{d.depends_on_project.id}</project_id>" +
+                     "<project_name>#{d.depends_on_project.name}</project_name>" +
+                     "<project_version>#{d.depends_on_project_version}</project_version>" +
+                     "</dependency>")
+
+        }
+        expect += "</dependencies></version>"
       }
       expect += "</versions></project>"
     }
@@ -192,7 +200,7 @@ describe "Polisher" do
       expect += "<source><id>#{s.id}</id><name>#{s.name}</name><source_type>#{s.source_type}</source_type><uri>#{s.uri}</uri><versions>"
       s.versions.each { |v|
         expect += "<version><id>#{v}</id><projects>"
-        s.project_source_versions_for_version(version).each { |ps|
+        s.project_source_versions_for_version(v).each { |ps|
           expect += "<project><name>#{ps.project.name}</name><version>#{ps.project_version}</version></project>"
         }
         expect += "</projects></version>"
@@ -330,7 +338,7 @@ describe "Polisher" do
       LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "message" }.content.strip.should =~ /.*MYERROR.*/
   end
 
-  it "should allow project source creations" do
+  it "should allow project source version creations" do
     project = Project.create! :name => "create-project-source-testproject1"
     source  = Source.create!  :name => "create-project_source-testsource1", :source_type => 'file', :uri => 'http://cpsts1'
 
@@ -344,7 +352,7 @@ describe "Polisher" do
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "true"
   end
 
-  it "should return an error if project source project_id or source_id is not specified on creation" do
+  it "should return an error if project source version project_id or source_id is not specified on creation" do
     project = Project.create! :name => "create-project_source-test2"
     source  = Source.create!  :name => "create-project_source-testsource2", :source_type => 'file', :uri => 'http://cpsts10'
 
@@ -361,23 +369,26 @@ describe "Polisher" do
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
   end
 
-  it "should return an error if project source project_id or source_id is invalid" do
+  it "should return an error if project source version project_id or source_id is invalid" do
+    project = Project.create! :name => "create-project_source-test42"
+    source  = Source.create!  :name => "create-project_source-testsource42", :source_type => 'file', :uri => 'http://cpsts10110'
+
     lambda do
-      post '/project_source_versions/create', :project_id => 'abc'
+      post '/project_source_versions/create', :project_id => 'abc', :source_id => source.id
     end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
 
     lambda do
-      post '/project_source_versions/create', :source_id => 'def'
+      post '/project_source_versions/create', :source_id => 'def', :project_id => project.id
     end.should_not change(ProjectSourceVersion, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
   end
 
-  it "should allow project source deletions" do
+  it "should allow project source version deletions" do
     project = Project.create! :name => "create-project_source-test20"
-    source  = Source.create!  :name => "create-project_source-testsource42", :source_type => 'file', :uri => 'http://cpsts20'
+    source  = Source.create!  :name => "create-project_source-testsource420024", :source_type => 'file', :uri => 'http://cpsts20'
     post '/project_source_versions/create', :project_id => project.id, :source_id => source.id
 
     ps = ProjectSourceVersion.find(:first, :conditions => [ 'source_id = ? AND project_id = ?', source.id, project.id])
@@ -388,10 +399,77 @@ describe "Polisher" do
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "true"
   end
 
-  it "should return an error if project source id to delete is invalid" do
+  it "should return an error if project source version id to delete is invalid" do
     lambda do
       delete "/project_source_versions/destroy/abc"
     end.should_not change(ProjectSourceVersion, :count)
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
+  end
+
+  it "should allow project dependency creations" do
+    project1 = Project.create! :name => "create-project-dep-testprojectA"
+    project2 = Project.create! :name => "create-project-dep-testprojectB"
+
+    lambda do
+      post '/project_dependencies/create', :project_id => project1.id, :depends_on_project_id => project2.id
+    end.should change(ProjectDependency, :count).by(1)
+    pd = ProjectDependency.find(:first, :conditions => [ 'project_id = ? AND depends_on_project_id = ?', project1.id, project2.id])
+    pd.should_not be_nil
+
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "true"
+  end
+
+  it "should return an error if project_id or depends_on_project_id is not specified on dependency creation" do
+    project = Project.create! :name => "create-project-dep-testprojectC"
+
+    lambda do
+      post '/project_dependencies/create', :project_id => project.id
+    end.should_not change(ProjectDependency, :count)
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
+
+    lambda do
+      post '/project_dependencies/create', :depends_on_project_id => project.id
+    end.should_not change(ProjectDependency, :count)
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
+  end
+
+  it "should return an error if project_id or depends_on_project_id is invalid" do
+    project = Project.create! :name => "create-project-dep-testprojectD"
+
+    lambda do
+      post '/project_dependencies/create', :project_id => 'abc', :depends_on_project_id => project.id
+    end.should_not change(ProjectDependency, :count)
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
+
+    lambda do
+      post '/project_source_versions/create', :depends_on_project_id => 'def', :project_id => project.id
+    end.should_not change(ProjectDependency, :count)
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
+  end
+
+  it "should allow project dependency deletions" do
+    project1 = Project.create! :name => "delete-project-dep-testprojectA"
+    project2 = Project.create! :name => "delete-project-dep-testprojectB"
+    post '/project_dependencies/create', :project_id => project1.id, :depends_on_project_id => project2.id
+
+    ps = ProjectDependency.find(:first, :conditions => [ 'project_id = ? AND depends_on_project_id = ?', project1.id, project2.id])
+    lambda do
+      delete "/project_dependencies/destroy/#{ps.id}"
+    end.should change(ProjectDependency, :count).by(-1)
+    last_response.should be_ok
+    LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "true"
+  end
+
+  it "should return an error if project dependency id to delete is invalid" do
+    lambda do
+      delete "/project_dependencies/destroy/abc"
+    end.should_not change(ProjectDependency, :count)
     last_response.should be_ok
     LibXML::XML::Document.string(last_response.body).root.children.find { |c| c.name == "success" }.content.strip.should == "false"
   end

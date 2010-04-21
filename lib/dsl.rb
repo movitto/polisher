@@ -34,12 +34,13 @@ class Project
   # Project attributes
   attr_accessor :id, :name
 
-  # Means to store project version to be used when setting up project_source_versions
-  attr_accessor :project_version
+  # Means to store project version and dependency params to be used when setting up project_source_versions and deps
+  attr_accessor :project_version, :dependency_params
 
   def initialize(args = {})
     args = {:id => nil, :name => nil}.merge(args)
     @id = args[:id] ; @name = args[:name]
+    @dependency_params = {}
   end
 
   # Add a method to project for each source type, eg add_archive, add_path, add_repo, etc.
@@ -123,11 +124,25 @@ class Project
   def version(version, args = {})
     version = nil if version == "*"
     @project_version = version
-    return self unless args.has_key?(:corresponds_to)
+    @dependency_params = args unless args.empty?
 
-    # dispatch to source.version so we don't have to implement twice
-    source = args[:corresponds_to]
-    source.version source.source_version, :corresponds_to => self
+    if args.has_key?(:corresponds_to)
+      # dispatch to source.version so we don't have to implement twice
+      source = args[:corresponds_to]
+      source.version source.source_version, :corresponds_to => self
+
+    elsif args.has_key?(:depends_on)
+      project = args.delete(:depends_on)
+      args = project.dependency_params.merge(args) unless project.dependency_params.empty?
+      depends_on_args = String.from_h(args) unless args.empty?
+      args = {:project_id => id, :project_version => version,
+              :depends_on_project_id  => project.id,  :depends_on_project_version  => project.project_version, 
+              :depends_on_project_params => depends_on_args}
+      RestClient.post("#{$polisher_uri}/project_dependencies/create", args) { |response| Polisher.handle_response('created project dependency', response) }
+
+    else
+      return self
+    end
   end
 
   # Test fire project released event for specified version
@@ -196,7 +211,7 @@ class Source
     version = nil if version == "*"
     project = args.delete(:corresponds_to)
 
-    @uri_args = args.keys.collect { |k| k.to_s + "=" + args[k].to_s }.join(";") unless args.empty?
+    @uri_args = String.from_h(args) unless args.empty?
 
     if project.nil?
       @source_version = version

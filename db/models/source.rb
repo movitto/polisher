@@ -55,7 +55,7 @@ class Source < ActiveRecord::Base
   def format_uri!(variables)
     params = {}
     if variables.class == String
-      variables.split(';').each { |p| u = p.split('='); params[u[0]] = u[1] }
+      params = variables.to_h
     elsif variables.class == Hash
       params = variables
     else

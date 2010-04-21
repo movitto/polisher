@@ -16,6 +16,12 @@ class Project < ActiveRecord::Base
   has_many :sources, :through => :project_source_versions
   has_many :events
 
+  has_many :project_dependencies
+  has_many :project_dependents, :class_name => "ProjectDependency", :foreign_key => "depends_on_project_id"
+
+  alias :dependencies :project_dependencies
+  alias :dependents :project_dependents
+
   validates_presence_of   :name
   validates_uniqueness_of :name
 
@@ -31,6 +37,12 @@ class Project < ActiveRecord::Base
   def events_for_version(version)
     evnts = events
     evnts.find_all { |event| event.applies_to_version?(version) }
+  end
+
+  # Return all dependencies associated w/ particular version of the project
+  def dependencies_for_version(version)
+    deps = project_dependencies
+    deps.find_all { |dep| dep.project_version == version || dep.project_version.nil? }
   end
 
   # Return all project_source_versions associated w/ particular version of the project
@@ -70,7 +82,29 @@ class Project < ActiveRecord::Base
 
   # Return all versions which we have configured this project for
   def versions
+    # TODO should we return configured project_depents.depends_on_project_version as well ?
     (project_source_versions.collect { |ps| ps.project_version } +
-     events.collect { |e| e.version }).uniq - [nil]
+     events.collect { |e| e.version } +
+     project_dependencies.collect { |d| d.project_version }).uniq - [nil]
   end
+
+  # Release specified project version
+  def released_version(version, args = {})
+    # process dependencies
+    dependencies_for_version(version).each { |dep|
+      dargs = {}
+      dargs = dep.depends_on_project_params.to_h.merge!(args) unless dep.depends_on_project_params.nil?
+
+      # if dep_version.nil? grab all configured depends_on_project versions
+      dep_versions = dep.depends_on_project_version
+      dep_versions = dep_versions.nil? ? dep.depends_on_project.versions : [dep_versions]
+
+      dep_versions.each { |dv| dep.depends_on_project.released_version(dv, dargs) }
+    }
+
+    # process events
+    args[:version] = version
+    events_for_version(version).each { |event| event.run(args) }
+  end
+
 end

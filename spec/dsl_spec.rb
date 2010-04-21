@@ -158,6 +158,34 @@ describe "Polisher::DSL::Project" do
                                                 "1.6.5", "2.0.12", proj.id, src.id, 'some=attr']).should_not be_nil
    end
 
+   it "should correctly setup project dependencies" do
+    proj1 = Project.create! :name => 'project-deps-test-proj490'
+    proj2 = Project.create! :name => 'project-deps-test-proj491'
+
+    dproj1 = Polisher::Project.new :id => proj1.id, :name => proj1.name
+    dproja = dproj1.version("2.5")
+    dproja.should be(dproj1)
+    dproja.project_version.should == "2.5"
+
+    dproj2 = Polisher::Project.new :id => proj2.id, :name => proj2.name
+    dprojb = dproj2.version("5.6", :some => 'foo', :bar => 'camp')
+    dprojb.should be(dproj2)
+    dprojb.project_version.should == "5.6"
+    dprojb.dependency_params[:some].should == 'foo'
+    dprojb.dependency_params[:bar].should == 'camp'
+
+    lambda {
+      dproj1.version "1.6.5", :some => "attr", :depends_on => dproj2
+    }.should change(ProjectDependency, :count).by(1)
+
+    pd = ProjectDependency.find(:first, :conditions => ['project_id = ? AND project_version = ? AND depends_on_project_id = ? AND depends_on_project_version = ?',
+                                                        proj1.id, "1.6.5", proj2.id, "5.6"])
+    pd.should_not be_nil
+    params = pd.depends_on_project_params.split(";")
+    params.include?("some=attr").should be_true
+    params.include?("bar=camp").should be_true
+   end
+
    it "should trigger release" do
       db_project   = Project.create :name => 'dsl-trigger-test'
       event = Event.create :project => db_project,
