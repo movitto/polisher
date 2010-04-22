@@ -42,7 +42,7 @@ module Polisher::DB
 end
 
 # get polisher config
-POLISHER_CONFIG = YAML::load(File.open(Sinatra::Application.polisher_config))[Sinatra::Application.environment.to_s]
+POLISHER_CONFIG = load_polisher_config(Sinatra::Application)
 
 ##################################################################### Projects
 

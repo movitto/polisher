@@ -37,6 +37,22 @@ def create_missing_polisher_dirs(args = {})
    }
 end
 
+# Set up and return polisher config from application
+def load_polisher_config(app)
+  config = {}
+  loaded_config =  YAML::load(File.open(app.polisher_config))[app.environment.to_s]
+  config.merge!(loaded_config) unless loaded_config.nil?
+
+  # attempt to parse gem api key from ~/.gem/credentials if missing
+  if config["gem_api_key"].nil?
+    gcfile = File.expand_path("~/.gem/credentials")
+    if File.exists?(gcfile)
+      config["gem_api_key"] = File.read_all(gcfile).scan(/:rubygems_api_key:\s(.*)/).to_s
+    end
+  end
+  return config
+end
+
 class String
   
   # Parse/split string around element delimiters (;) and 
