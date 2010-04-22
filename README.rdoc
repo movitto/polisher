@@ -61,10 +61,31 @@ simply run
 before './bin/server' or 'rake spec', etc
 
 === Using
- See the generated API docs, spec suite, and polisher scripts for more detailed usage.
+Run 'rake spec' in the project root to generate the API docs in the doc/ subdir.
+Also see the spec suite and polisher scripts for more detailed usage.
 
- Polisher is a work in progress, and features are being added / removed as neccessary.
- Comments, bug reports, and patches are all very welcome.
+When running, the server can be accessed by navigating to 'http://localhost:3000'.
+REST requests may be issued against that URI and the actions defined in polisher.rb.
+The DSL sits on top of this REST interface and provides a nice / simple means which
+to setup projects, sources, release workflows, etc, in an easily reproducable manner.
+
+At typical DSL use case might look like:
+
+  project :name => "ruby" do |proj|
+   proj.add_archive :name => 'ruby_source', :uri => "ftp://ftp.ruby-lang.org/pub/ruby/%{rubyxver}/ruby-%{arcver}.tar.bz2" do |archive|
+     archive.version "1.8.6", :rubyxver => "1.8", :arcver => "1.8.7-p311", :corresponds_to => proj.version("1.8.6")
+     proj.version "1.9.1", :corresponds_to => archive.version("1.9.1", :rubyxver => "1.9", :arcver => "1.8.7-p300")
+   end
+   proj.add_patch "http://cvs.fedoraproject.org/viewvc/rpms/ruby/F-13/ruby-deadcode.patch?view=markup"
+   # etc...
+
+   proj.on_version "*", "create package"
+   proj.on_version "=",  "1.8.6",  "update repo", "stable"
+   proj.on_version ">=", "1.9.1",  "update repo", "devel"
+  end
+
+Polisher is a work in progress, and features are being added / removed as neccessary.
+Comments, bug reports, and patches are all very welcome.
 
 == Extending
 Out of the box Polisher is able to handle {Rubygem}[http://rubygems.org/] based projects and

@@ -47,7 +47,7 @@ POLISHER_CONFIG = load_polisher_config(Sinatra::Application)
 ##################################################################### Projects
 
 # Redirect to /projects
-get '/' do redirect '/projects'; end
+get '/' do redirect '/projects.html'; end
 
 get '/projects.html' do
   @projects  = Project.find :all

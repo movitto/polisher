@@ -18,11 +18,11 @@ require 'libxml'
 
 describe "Polisher" do
 
-  it "should redirect / to /projects" do
+  it "should redirect / to /projects.html" do
     get '/'
     last_response.should_not be_ok
     follow_redirect!
-    last_request.url.should == "http://example.org/projects"
+    last_request.url.should == "http://example.org/projects.html"
     last_response.should be_ok
   end
 
