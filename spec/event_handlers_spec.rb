@@ -25,6 +25,7 @@ describe "EventHandlers" do
   before(:all) do
     @gem = Project.create! :name => 'rubygem-polisher'
     @gem.primary_source = Source.new :name => 'polisher', :source_type => 'gem', :uri => 'http://rubygems.org/gems/polisher-%{version}.gem'
+    @gem_event0 = Event.create! :project => @gem, :process => 'download_sources'
     @gem_event1 = Event.create! :project => @gem, :process => 'create_rpm_package'
 
     @gem_event2 = Event.create! :project => @gem, :process => 'create_rpm_package',
@@ -34,8 +35,9 @@ describe "EventHandlers" do
 
     @project = Project.create :name => 'ruby-activerecord'
     @project.sources << Source.new(:name => 'activerecord', :source_type => 'file',
-          :uri     => 'http://rubyforge.org/frs/download.php/28874/activerecord-%{version}.tgz')
+          :uri     => 'http://rubyforge.org/frs/download.php/%{level}/activerecord-%{version}.tgz')
 
+    @project_event0 = Event.create! :project => @project, :process => 'download_sources', :process_options => "level=28874"
     @project_event1 = Event.create! :project => @project, :process => 'create_rpm_package',
                                     :process_options => ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
 
@@ -57,24 +59,33 @@ describe "EventHandlers" do
     FileUtils.rm_rf(ARTIFACTS_DIR) if File.directory? ARTIFACTS_DIR
   end
 
+  it "should download sources" do
+    download_sources(@gem_event0, "0.3")
+    File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
+
+    download_sources(@project_event0, "2.0.1")
+    File.exists?(ARTIFACTS_DIR + '/SOURCES/activerecord-2.0.1.tgz').should == true
+  end
+
   it "should correctly create a gem based package" do
+     download_sources(@gem_event0, "0.3")
      create_rpm_package(@gem_event1, "0.3")
-     File.exists?(ARTIFACTS_DIR + '/SOURCES/polisher-0.3.gem').should == true
      File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
      File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.3-1.#{BUILD_VERSION}.src.rpm").should == true
      File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
   end
 
   it "should correctly create a gem based package using template" do
+    download_sources(@gem_event0, "0.3")
     create_rpm_package(@gem_event2, '0.3')
     File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
     File.read_all(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should =~ /.*by polisher.*/
   end
 
   it "should correctly create an upstream based project package" do
+    download_sources(@project_event0, "2.0.1")
     create_rpm_package(@project_event1, "2.0.1", :release => 3)
 
-    File.exists?(ARTIFACTS_DIR + '/SOURCES/activerecord-2.0.1.tgz').should == true
     File.exists?(ARTIFACTS_DIR + '/SPECS/ruby-activerecord.spec').should == true
     File.exists?(ARTIFACTS_DIR + "/SRPMS/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.src.rpm").should == true
     File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
@@ -83,11 +94,13 @@ describe "EventHandlers" do
   end
 
   it "should correctly update repository" do
+     download_sources(@gem_event0, "0.3")
      create_rpm_package(@gem_event1, '0.3')
      update_yum_repo(@gem_event3, '0.3')
 
      template = ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
      File.write(template, POLISHER_ERB_TEST_TEMPLATE)
+     download_sources(@project_event0, "2.0.1")
      create_rpm_package(@project_event1, "2.0.1", :release => 3)
      update_yum_repo(@project_event2, '2.0')
 

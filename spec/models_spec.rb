@@ -528,7 +528,8 @@ describe "Polisher::Event" do
 
    it "should return list of supported event handlers" do
      processes = Event::processes
-     processes.size.should == 2
+     processes.size.should == 3
+     processes.include?("download_sources").should be_true
      processes.include?("create_rpm_package").should be_true
      processes.include?("update_yum_repo").should be_true
    end

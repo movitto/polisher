@@ -138,6 +138,21 @@ describe "Polisher::DSL::Project" do
                                           should_not be_nil
    end
 
+   it "should accept additional process options in event creation" do
+     db_project = Project.create! :name => "project-event-creation-test2"
+     project    = Polisher::Project.new :id => db_project.id, :name => db_project.name
+     lambda {
+       project.on_version "<", "3.9", "do something", "options", :more => 'thing', :to => 'set'
+     }.should change(Event, :count).by(1)
+     event = Event.find(:first, :conditions => [ 'project_id = ? AND version_qualifier = ? AND version = ? AND process = ?',
+                                                 project.id, "<", "3.9", "do_something"])
+     event.should_not be_nil
+     po = event.process_options.split(";")
+     po.include?("options").should be_true
+     po.include?("more=thing").should be_true
+     po.include?("to=set").should be_true
+   end
+
    it "should correctly setup project/source versions" do
      proj = Project.create! :name => 'project-source-version-test-proj1'
      src =  Source.create!  :name => 'project-source-version-test-src1', :source_type => 'file', :uri => 'http://host.bar'

@@ -104,13 +104,15 @@ class Project
     RestClient.delete("#{$polisher_uri}/projects/destroy/#{id}") { |response| Polisher.handle_response('delete project', response, true) }
   end
 
-  # Create new Event w/ the specified version qualifier, version, process, and process optiosn
+  # Create new Event w/ the specified version qualifier, version, process, and process options
   def on_version(*args)
-    args.unshift nil if args.size == 3
+    args.unshift nil unless ['', '=', '>', '<', '>=', '<='].include?(args[0]) # XXX don't like having to replicate entire event version qualifiers, but don't want the activerecord dependency
     version_qualifier = args[0]
     version           = args[1]
     process           = args[2]
     process_options   = args[3]
+    process_options   = "" if process_options.nil?
+    process_options   += ";" + String.from_h(args[4]) if args.size == 5
 
     process.gsub!(/\s/, '_')
 

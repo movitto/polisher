@@ -28,27 +28,36 @@ require 'net/smtp'
 
 module EventHandlers
 
+# Download project sources
+def download_sources(event, version, args = {})
+   project       = event.project
+   args.merge!({ :dir => ARTIFACTS_DIR + "/SOURCES", :version => version })
+   args = event.process_options.to_h.merge(args) unless event.process_options.nil?
+
+   # if we've already d/l'd the sources, skip the rest of the event execution (incorporate md5sums in the future)
+   downloaded = false
+   project.sources_for_version(version).each { |src|
+     src.format_uri! args
+     downloaded = true if File.exists?(ARTIFACTS_DIR + "/SOURCES/#{src.filename}")
+   }
+   return if downloaded
+
+   # d/l projects sources into artifacts/SOURCES dir
+   project.download_to args
+end
+
 # Convert project into rpm package format.
 def create_rpm_package(event, version, args = {})
    project       = event.project
    template_file = event.process_options
+   args.merge!({ :version => version })
 
-   args.merge!({ :dir => ARTIFACTS_DIR + "/SOURCES", :version => version })
+   # if the rpm is built, skip the rest of the event execution (really need to check if the sources changed)
+   return if !Dir[ARTIFACTS_DIR + "/RPMS/*/#{project.name}-#{version}*.rpm"].empty?
 
    # open a handle to the spec file to write
    spec_file = ARTIFACTS_DIR + "/SPECS/#{project.name}.spec"
    sfh = File.open(spec_file, "wb")
-
-   # if we've already d/l'd the sources and the rpm is built, skip the rest of the event execution (incorporate md5sums in the future)
-   built = !Dir[ARTIFACTS_DIR + "/RPMS/*/#{project.name}-#{version}*.rpm"].empty?
-   project.sources_for_version(version).each { |src|
-     src.format_uri! args
-     built = false unless File.exists?(ARTIFACTS_DIR + "/SOURCES/#{src.filename}")
-   }
-   return if built
-
-   # d/l projects sources into artifacts/SOURCES dir
-   project.download_to args
 
    # read template if specified
    template = (template_file == '' || template_file.nil?) ? nil : File.read_all(template_file)
