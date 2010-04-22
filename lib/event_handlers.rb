@@ -49,8 +49,15 @@ end
 # Convert project into rpm package format.
 def create_rpm_package(event, version, args = {})
    project       = event.project
-   template_file = event.process_options
    args.merge!({ :version => version })
+   template_file = nil
+   mock_target = nil
+
+   unless event.process_options.nil?
+     poh = event.process_options.to_h
+     template_file = poh["spec"]
+     mock_target = poh["mock"]
+   end
 
    # if the rpm is built, skip the rest of the event execution (really need to check if the sources changed)
    return if !Dir[ARTIFACTS_DIR + "/RPMS/*/#{project.name}-#{version}*.rpm"].empty?
@@ -92,8 +99,19 @@ def create_rpm_package(event, version, args = {})
 
    sfh.close
 
-   # run rpmbuild on spec
-   system("rpmbuild --define '_topdir #{ARTIFACTS_DIR}' -ba #{spec_file}")
+   # run rpmbuild on spec to build srpm
+   system("rpmbuild --define '_topdir #{ARTIFACTS_DIR}' -bs #{spec_file}")
+
+   # run mock on srpm to build rpm
+   system("mock -r #{mock_target} rebuild #{ARTIFACTS_DIR}/SRPMS/#{project.name}-#{version}-*.src.rpm")
+
+   # copy generated rpms from /var/lib/mock/[mock_root] to ARTIFACTS/RPMS/[arches]
+   Dir["/var/lib/mock/#{mock_target}/root/builddir/build/RPMS/*.rpm"].each { |rpm|
+     arch = rpm.split(".")
+     arch = arch[arch.size-2]
+     FileUtils.mkdir_p "#{ARTIFACTS_DIR}/RPMS/#{arch}" unless File.directory? "#{ARTIFACTS_DIR}/RPMS/#{arch}"
+     FileUtils.cp rpm, "#{ARTIFACTS_DIR}/RPMS/#{arch}"
+   }
 end
 
 # Update specified yum repository w/ latest project artifact for specified version

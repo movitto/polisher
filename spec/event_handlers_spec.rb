@@ -16,8 +16,6 @@ require 'fileutils'
 
 require File.dirname(__FILE__) + '/spec_helper'
 
-BUILD_VERSION='fc11'
-
 include EventHandlers
 
 describe "EventHandlers" do
@@ -26,10 +24,10 @@ describe "EventHandlers" do
     @gem = Project.create! :name => 'rubygem-polisher'
     @gem.primary_source = Source.new :name => 'polisher', :source_type => 'gem', :uri => 'http://rubygems.org/gems/polisher-%{version}.gem'
     @gem_event0 = Event.create! :project => @gem, :process => 'download_sources'
-    @gem_event1 = Event.create! :project => @gem, :process => 'create_rpm_package'
+    @gem_event1 = Event.create! :project => @gem, :process => 'create_rpm_package', :process_options => "mock=fedora-12-x86_64"
 
     @gem_event2 = Event.create! :project => @gem, :process => 'create_rpm_package',
-                                :process_options => ARTIFACTS_DIR + '/templates/polisher.spec.tpl'
+                                :process_options => "spec=#{ARTIFACTS_DIR}/templates/polisher.spec.tpl;mock=fedora-12-x86_64"
 
     @gem_event3 = Event.create! :project => @gem, :process => 'update_repo', :process_options => "#{ARTIFACTS_DIR}/repos/fedora-ruby"
 
@@ -39,7 +37,7 @@ describe "EventHandlers" do
 
     @project_event0 = Event.create! :project => @project, :process => 'download_sources', :process_options => "level=28874"
     @project_event1 = Event.create! :project => @project, :process => 'create_rpm_package',
-                                    :process_options => ARTIFACTS_DIR + '/templates/polisher-projects.spec.tpl'
+                                    :process_options => "spec=#{ARTIFACTS_DIR}/templates/polisher-projects.spec.tpl;mock=fedora-12-x86_64"
 
     @project_event2 = Event.create! :project => @project, :process => 'update_repo', :process_options => "#{ARTIFACTS_DIR}/repos/fedora-ruby"
   end
@@ -71,8 +69,8 @@ describe "EventHandlers" do
      download_sources(@gem_event0, "0.3")
      create_rpm_package(@gem_event1, "0.3")
      File.exists?(ARTIFACTS_DIR + '/SPECS/rubygem-polisher.spec').should == true
-     File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.3-1.#{BUILD_VERSION}.src.rpm").should == true
-     File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/SRPMS/rubygem-polisher-0.3-1.fc11.src.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/rubygem-polisher-0.3-1.fc12.noarch.rpm").should == true
   end
 
   it "should correctly create a gem based package using template" do
@@ -87,10 +85,10 @@ describe "EventHandlers" do
     create_rpm_package(@project_event1, "2.0.1", :release => 3)
 
     File.exists?(ARTIFACTS_DIR + '/SPECS/ruby-activerecord.spec').should == true
-    File.exists?(ARTIFACTS_DIR + "/SRPMS/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.src.rpm").should == true
-    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
-    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
-    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/another-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/SRPMS/ruby-activerecord-2.0.1-3.fc11.src.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-2.0.1-3.fc12.noarch.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/ruby-activerecord-subpkg-2.0.1-3.fc12.noarch.rpm").should == true
+    File.exists?(ARTIFACTS_DIR + "/RPMS/noarch/another-subpkg-2.0.1-3.fc12.noarch.rpm").should == true
   end
 
   it "should correctly update repository" do
@@ -106,10 +104,10 @@ describe "EventHandlers" do
 
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/noarch').should == true
      File.directory?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata').should == true
-     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/rubygem-polisher-0.3-1.#{BUILD_VERSION}.noarch.rpm").should == true
-     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/ruby-activerecord-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
-     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/ruby-activerecord-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
-     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/another-subpkg-2.0.1-3.#{BUILD_VERSION}.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/rubygem-polisher-0.3-1.fc12.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/ruby-activerecord-2.0.1-3.fc12.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/ruby-activerecord-subpkg-2.0.1-3.fc12.noarch.rpm").should == true
+     File.exists?(ARTIFACTS_DIR + "/repos/fedora-ruby/noarch/another-subpkg-2.0.1-3.fc12.noarch.rpm").should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/repomd.xml').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/primary.xml.gz').should == true
      File.exists?(ARTIFACTS_DIR + '/repos/fedora-ruby/repodata/other.xml.gz').should == true
