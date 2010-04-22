@@ -49,11 +49,11 @@ end
 Rake::RDocTask.new do |rd|
     rd.main = "README.rdoc"
     rd.rdoc_dir = "doc/site/api"
-    rd.rdoc_files.include("README.rdoc", "polisher.rb", "db/**/*.rb", "lib/**/*.rb")
+    rd.rdoc_files.include("README.rdoc", "polisher.rb", "db/models/*.rb", "lib/**/*.rb")
 end
 
-PKG_FILES = FileList['bin/*', 'config/*.yml', 'config.ru', 'COPYING', 
-'db/**/*.rb', 'lib/**/*.rb', 'LICENSE', 'polisher.rb', 'public/**/*', 'Rakefile', 
+PKG_FILES = FileList['bin/*', 'config/*.yml', 'config.ru', 'COPYING',
+'db/**/*.rb', 'lib/**/*.rb', 'LICENSE', 'polisher.rb', 'public/**/*', 'Rakefile',
 'README.rdoc', 'spec/**/*.rb', 'TODO', 'views/**/*.haml']
 
 DIST_FILES = FileList[

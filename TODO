@@ -1,8 +1,7 @@
 - Remaining TODO's, FIXME's, etc
-- Syncronization locks needed! (on all shared artifacts, db objects)
-- More event handlers, generic handler interface, 
+- Parallelism w/ syncronization locks needed! (on all shared artifacts, db objects)
+- More event handlers, generic handler interface,
   workflow integration to automatically chain handlers together
-- Multiple user support, RBAC and ACL mechanisms
-- Project dependencies (w/ versions)
-- Integrate mock into build events to build packages in multiple seperate environments
-- Use ~/.gem/credentials
+- Generic source download interface, easily be able to download sources via and
+  number of mechanisms, and perform pre-release transformations (taring a source
+  checkout for example)

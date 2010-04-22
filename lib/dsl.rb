@@ -17,7 +17,7 @@ require 'rest_client'
 
 module Polisher
 
-# helper method to handle (print) xml status response
+# Helper method to handle (print) xml status response
 def handle_response(operation, response, exception_on_fail = false)
   rr = LibXML::XML::Document.string(response.body).root
   success = rr.children.find { |c| c.name == "success" }.content.strip == "true"

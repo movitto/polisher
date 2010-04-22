@@ -29,7 +29,7 @@ class Event < ActiveRecord::Base
    # XXX FIXME we need this for security
    #validates_inclusion_of :process, :in => Event.processes
 
-   #  version qualifiers
+   # Version qualifiers
    VERSION_QUALIFIERS = ['', '=', '>', '<', '>=', '<=']
 
    validates_inclusion_of :version_qualifier, :in => VERSION_QUALIFIERS, 
@@ -43,7 +43,7 @@ class Event < ActiveRecord::Base
    validates_presence_of :version_qualifier,
                          :if => Proc.new { |e| !e.version.nil? }
 
-   # determine if event applies to specified version
+   # Determine if event applies to specified version
    def applies_to_version?(cversion)
      raise ArgumentError, "valid event version #{version} and version #{cversion} required" unless (version.nil? || version.class == String) && cversion.class == String
 

@@ -12,17 +12,17 @@
 # General Public License, along with Polisher. If not, see 
 # <http://www.gnu.org/licenses/>
 
-# read entire file into string
+# Read entire file into string
 def File.read_all(path)
   File.open(path, 'rb') {|file| return file.read }
 end
 
-# write contents of file from string
+# Write contents of file from string
 def File.write(path, str)
   File.open(path, 'wb') {|file| file.write str }
 end
 
-# create any missing directories
+# Create any missing directories
 def create_missing_polisher_dirs(args = {})
   artifacts_dir = args[:artifacts_dir]
   db_data_dir   = args[:db_data_dir]
@@ -43,7 +43,7 @@ def load_polisher_config(app)
   loaded_config =  YAML::load(File.open(app.polisher_config))[app.environment.to_s]
   config.merge!(loaded_config) unless loaded_config.nil?
 
-  # attempt to parse gem api key from ~/.gem/credentials if missing
+  # Attempt to parse gem api key from ~/.gem/credentials if missing
   if config["gem_api_key"].nil?
     gcfile = File.expand_path("~/.gem/credentials")
     if File.exists?(gcfile)

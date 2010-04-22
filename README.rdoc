@@ -1,35 +1,84 @@
-== Rubygem Polisher
+== Polisher
 Copyright (C) 2010 Red Hat, Inc.
 
 Written by Mohammed Morsi <mmorsi@redhat.com>
 
 === Intro
-Polisher is a webapp utility greated towards processing rubygems after they
-have been published. It allows the end user to configure events to be run when
-specified gems are updated.
+Polisher is a project release management tool which can be used to register various event
+handlers to be invoked on specific versions of project / source releases. Polisher provides
+a simple {REST}[http://en.wikipedia.org/wiki/Representational_State_Transfer] interface which
+to create projects w/ sources and dependencies, and to download and transform them into any
+target output format.
 
-Polisher uses the gemcutter webhook API in conjunction with the sinatra/rack
-web framework to subscribe to gem updates and run any specified/arbitrary event
-handler callbacks.
+Polisher also provides a simple {DSL}[http://en.wikipedia.org/wiki/Domain-specific_language]
+frontend to the REST interface, able to be used to create and trigger elegant release
+workflows for any number of projects simultaneously. Workflows for many major Ruby based projects
+have been setup, transforming various versions into {Fedora}[http://fedoraproject.org/] repos and
+can be found at [http://github.com/movitto/polisher-scripts].
 
-=== Running
+
+== Running
 To install simply run:
 
   'gem install polisher'
+
 
 Alternatively checkout the source from github via
 
 'git clone git://github.com/movitto/polisher.git'
 
-To run the server, run 'bin/server' in the project root.
+
+Polisher requires various rubygems to work. gem install should pull in all dependencies
+but if running polisher from source, be sure to gem install:
+
+* rubygems
+* sinatra
+* libxml
+* curb
+* activerecord
+* libxml
+
+For the complete list of dependencies, see the
+{Rakefile}[http://github.com/movitto/polisher/blob/master/Rakefile].
+
+
+Polisher currently pulls config from the config/ subdir, the database
+params are defined in database.yml (currently defaulting to a sqlite flat file
+db residing in db/data), and the general application config resides in
+polisher.yml. The only general app config currently used is 'gem_api_key',
+which will be read from ~/.gem/credentials if missing from polisher.yml.
+
+To run the server, run './bin/server' in the project root.
 
 To run the spec suite simply run 'rake spec'
 
-Before running anything make sure to set any neccessary configuration
-in config/polisher.yml (particularily your gem api key)
+Config is environment specific, the server runs in the 'development' environment
+by default and the spec suite runs in 'test' by default. To change the environment
+simply run
+
+  'export RACK_ENV="production"'
+
+before './bin/server' or 'rake spec', etc
 
 === Using
- See the generated API docs and spec suite for more detailed usage.
+ See the generated API docs, spec suite, and polisher scripts for more detailed usage.
 
  Polisher is a work in progress, and features are being added / removed as neccessary.
  Comments, bug reports, and patches are all very welcome.
+
+== Extending
+Out of the box Polisher is able to handle {Rubygem}[http://rubygems.org/] based projects and
+generate rpm packages and yum repos on project releases. The
+{Gemcutter API}[http://rubygems.org/pages/api_docs],
+{gem2rpm}[http://rubyforge.org/projects/gem2rpm/], and rpm / yum tools are used to
+accomplish this, though Polisher can be easily extended to support any input / output format.
+
+The code itself currently has to be modified (most likely will be changed in the future),
+but to add support for downloading another input source format, extend
+{source.rb::download_to}[http://github.com/movitto/polisher/blob/master/db/models/source.rb]
+and optionally add another add_source_type method to the
+{Polisher::Project DSL}[http://github.com/movitto/polisher/blob/master/lib/dsl.rb].
+
+To add another event handler, simple add a new method to the
+{EventHandlers}[http://github.com/movitto/polisher/blob/master/lib/event_handlers.rb] module.
+Polisher will take care of the rest.
