@@ -12,6 +12,8 @@
 # General Public License, along with Polisher. If not, see
 # <http://www.gnu.org/licenses/>
 
+require File.expand_path(File.dirname(__FILE__)) + "/common"
+
 require 'libxml'
 require 'rest_client'
 
@@ -110,9 +112,12 @@ class Project
     version_qualifier = args[0]
     version           = args[1]
     process           = args[2]
-    process_options   = args[3]
-    process_options   = "" if process_options.nil?
-    process_options   += ";" + String.from_h(args[4]) if args.size == 5
+    process_options   = ""
+    if args[3].class == String
+      process_options = args[3]
+    elsif args[3].class == Hash
+      process_options = String.from_h(args[3])
+    end
 
     process.gsub!(/\s/, '_')
 

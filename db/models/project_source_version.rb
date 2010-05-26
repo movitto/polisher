@@ -14,8 +14,6 @@ class ProjectSourceVersion < ActiveRecord::Base
   belongs_to :project
   belongs_to :source
 
-  # FIXME destroy source on deletion only if no other project_source_versions sharing the source exist
-
   validates_uniqueness_of :source_id, :scope => [:project_id, :project_version]
 
   # validate only one primary_source set to 'true' in scope of (project_id, project_version)
@@ -28,4 +26,11 @@ class ProjectSourceVersion < ActiveRecord::Base
     self.project_version = nil if project_version == ""
     self.source_version = nil if source_version == ""
   end
+
+  # destroy source on deletion only if no other project_source_versions sharing the source exist
+  before_destroy :normalize_source
+  def normalize_source
+    source.delete unless source.projects.size > 1
+  end
+
 end

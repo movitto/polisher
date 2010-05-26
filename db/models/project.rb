@@ -12,7 +12,7 @@
 
 class Project < ActiveRecord::Base
   # TODO on delete, destroy these
-  has_many :project_source_versions
+  has_many :project_source_versions, :dependent => :destroy
   has_many :sources, :through => :project_source_versions
   has_many :events
 
@@ -103,8 +103,10 @@ class Project < ActiveRecord::Base
     }
 
     # process events
-    args[:version] = version
-    events_for_version(version).each { |event| event.run(args) }
+    pargs = {} ; args.each { |k,v| pargs[k] = v } # perform a surface copy of the hash so that it can be manipulated w/out changing the caller's param
+    pargs[:name]    = pargs["name"]    = name
+    pargs[:version] = pargs["version"] = version
+    events_for_version(version).each { |event| event.run(pargs) }
   end
 
 end

@@ -93,8 +93,10 @@ delete '/projects/destroy/:id' do
     end
 
     project_name = project.name
-    Project.delete params[:id]
+    Project.destroy params[:id]
     @result = {:success => true, :message => "successfully deleted project #{project_name}", :errors => []}
+
+    # TODO delete all project artifacts (?)
 
   rescue Exception => e
     @result = {:success => false, :message => "failed to delete project due to error #{e}", :errors => [e]}
@@ -171,7 +173,7 @@ delete '/sources/destroy/:id' do
     end
 
     source_uri = source.uri
-    Source.delete params[:id]
+    Source.destroy params[:id]
 
     @result = {:success => true, :message => "successfully deleted source #{source_uri}", :errors => []}
 
@@ -256,7 +258,7 @@ delete '/project_source_versions/destroy/:id' do
       raise ArgumentError, "/project_source_versions/destroy/#{params[:id]} could not find project source"
     end
 
-    ProjectSourceVersion.delete params[:id]
+    ProjectSourceVersion.destroy params[:id]
     @result = {:success => true, :message => "successfully deleted project source", :errors => []}
 
   rescue Exception => e
@@ -308,7 +310,7 @@ delete '/project_dependencies/destroy/:id' do
       raise ArgumentError, "/project_dependencies/destroy/#{params[:id]} could not find project dependency"
     end
 
-    ProjectDependency.delete params[:id]
+    ProjectDependency.destroy params[:id]
     @result = {:success => true, :message => "successfully deleted project dependency", :errors => []}
 
   rescue Exception => e
@@ -339,6 +341,7 @@ post '/events/create' do
                         :process => params[:process],
                         :process_options => params[:process_options]
     @event.save!
+    # FIXME validate process_options (will vary per specific event)
 
     @result = {:success => true, :message => "successfully created event", :errors => []}
 
@@ -361,7 +364,7 @@ delete '/events/destroy/:id' do
       raise ArgumentError, "/events/destroy/#{params[:id]} could not find event"
     end
 
-    Event.delete params[:id]
+    Event.destroy params[:id]
     @result = {:success => true, :message => "successfully deleted event", :errors => []}
 
   rescue Exception => e

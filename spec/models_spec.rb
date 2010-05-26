@@ -84,6 +84,24 @@ describe "Polisher::Project" do
     depts[0].project.id.should == project4.id
   end
 
+  it "should delete associated non-shared project sources when project is deleted" do
+     project = Project.create! :name => 'project-dep-destroy-proj'
+
+     source1  = Source.create!  :name => 'project-ep-destroy-src1',
+                                :uri  => 'http://aaaaaldfa690', :source_type => 'file'
+     source2  = Source.create!  :name => 'project-dep-destroy-src2',
+                                :uri  => 'http://bbbbbldfa456', :source_type => 'file'
+
+     ps1 = ProjectSourceVersion.create! :project => project, :source => source1
+     ps2 = ProjectSourceVersion.create! :project => project, :source => source2
+
+     project.destroy
+     ProjectSourceVersion.find(:first, :conditions => ['id = ?', ps1.id]).should be_nil
+     ProjectSourceVersion.find(:first, :conditions => ['id = ?', ps2.id]).should be_nil
+     Source.find(:first, :conditions => ['id = ?', source1.id]).should be_nil
+     Source.find(:first, :conditions => ['id = ?', source2.id]).should be_nil
+  end
+
   it "should download all sources" do
     project = Project.create! :name => 'project-dl-test100'
 
@@ -476,6 +494,26 @@ describe "Polisher::ProjectSourceVersion" do
                                  :primary_source => true
 
     ps2.valid?.should be_false
+   end
+
+   it "should delete sources not associated w/ any other projects upon deletion" do
+     project1 = Project.create! :name => 'project-source-dep-destroy-proj1'
+     project2 = Project.create! :name => 'project-source-dep-destroy-proj2'
+
+     source1  = Source.create!  :name => 'project-source-dep-destroy-src1',
+                                :uri  => 'http://ldfa690', :source_type => 'file'
+     source2  = Source.create!  :name => 'project-source-dep-destroy-src2',
+                                :uri  => 'http://ldfa456', :source_type => 'file'
+
+     ps1 = ProjectSourceVersion.create! :project => project1, :source => source1
+     ps2 = ProjectSourceVersion.create! :project => project1, :source => source2
+     ps3 = ProjectSourceVersion.create! :project => project2, :source => source2
+
+     ps1.destroy
+     Source.find(:first, :conditions => ['id = ?', source1.id]).should be_nil
+
+     ps2.destroy
+     Source.find(:first, :conditions => ['id = ?', source2.id]).should_not be_nil
    end
 
 end

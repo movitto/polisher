@@ -82,7 +82,7 @@ SPEC = Gem::Specification.new do |s|
 
     s.author = "Mohammed Morsi"
     s.email = "mmorsi@redhat.com"
-    s.date = %q{2010-03-11}
+    s.date = %q{2010-04-22}
     s.summary = "A project release management tool"
     s.description = "Polisher provides simple REST and DSL interfaces allowing you to configure event workflows to be invoked on specific versions of project/source releases"
     s.homepage = "http://github.com/movitto/polisher"

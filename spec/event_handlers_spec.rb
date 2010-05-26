@@ -29,7 +29,7 @@ describe "EventHandlers" do
     @gem_event2 = Event.create! :project => @gem, :process => 'create_rpm_package',
                                 :process_options => "spec=#{ARTIFACTS_DIR}/templates/polisher.spec.tpl;mock=fedora-12-x86_64"
 
-    @gem_event3 = Event.create! :project => @gem, :process => 'update_repo', :process_options => "#{ARTIFACTS_DIR}/repos/fedora-ruby"
+    @gem_event3 = Event.create! :project => @gem, :process => 'update_repo', :process_options => "repo=#{ARTIFACTS_DIR}/repos/fedora-ruby"
 
     @project = Project.create :name => 'ruby-activerecord'
     @project.sources << Source.new(:name => 'activerecord', :source_type => 'file',
@@ -39,7 +39,7 @@ describe "EventHandlers" do
     @project_event1 = Event.create! :project => @project, :process => 'create_rpm_package',
                                     :process_options => "spec=#{ARTIFACTS_DIR}/templates/polisher-projects.spec.tpl;mock=fedora-12-x86_64"
 
-    @project_event2 = Event.create! :project => @project, :process => 'update_repo', :process_options => "#{ARTIFACTS_DIR}/repos/fedora-ruby"
+    @project_event2 = Event.create! :project => @project, :process => 'update_repo', :process_options => "repo=#{ARTIFACTS_DIR}/repos/fedora-ruby"
   end
  
   before(:each) do

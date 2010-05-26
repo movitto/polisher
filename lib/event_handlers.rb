@@ -25,6 +25,7 @@ require 'gem2rpm'
 require 'net/smtp'
 
 # TODO raise some exceptions of our own here (though not neccessary as event.run will rescue everything raised, it might help w/ debugging)
+# FIXME way better reporting / logging, if rpm, mock, or yum build fails, we need logs
 
 module EventHandlers
 
@@ -35,10 +36,10 @@ def download_sources(event, version, args = {})
    args = event.process_options.to_h.merge(args) unless event.process_options.nil?
 
    # if we've already d/l'd the sources, skip the rest of the event execution (incorporate md5sums in the future)
-   downloaded = false
+   downloaded = true
    project.sources_for_version(version).each { |src|
      src.format_uri! args
-     downloaded = true if File.exists?(ARTIFACTS_DIR + "/SOURCES/#{src.filename}")
+     downloaded = false unless File.exists?(ARTIFACTS_DIR + "/SOURCES/#{src.filename}")
    }
    return if downloaded
 
@@ -57,6 +58,7 @@ def create_rpm_package(event, version, args = {})
      poh = event.process_options.to_h
      template_file = poh["spec"]
      mock_target = poh["mock"]
+     args.merge!(poh)
    end
 
    # if the rpm is built, skip the rest of the event execution (really need to check if the sources changed)
@@ -72,6 +74,7 @@ def create_rpm_package(event, version, args = {})
    # if primary project source is a gem, process template w/ gem2rpm
    primary_source = project.primary_source_for_version(version)
    if !primary_source.nil? && primary_source.source_type == "gem"
+     primary_source.format_uri! args
      gem_file_path = ARTIFACTS_DIR + '/SOURCES/' + primary_source.filename
      template = Gem2Rpm::TEMPLATE if template.nil?
      Gem2Rpm::convert gem_file_path, template, sfh
@@ -99,11 +102,14 @@ def create_rpm_package(event, version, args = {})
 
    sfh.close
 
+   # FIXME we need to handle the return code of these next two system commands,
+   # if not success, throw an exception
+
    # run rpmbuild on spec to build srpm
    system("rpmbuild --define '_topdir #{ARTIFACTS_DIR}' -bs #{spec_file}")
 
    # run mock on srpm to build rpm
-   system("mock -r #{mock_target} rebuild #{ARTIFACTS_DIR}/SRPMS/#{project.name}-#{version}-*.src.rpm")
+   system("mock -r #{mock_target} rebuild #{ARTIFACTS_DIR}/SRPMS/#{project.name}-#{version}*.src.rpm")
 
    # copy generated rpms from /var/lib/mock/[mock_root] to ARTIFACTS/RPMS/[arches]
    Dir["/var/lib/mock/#{mock_target}/root/builddir/build/RPMS/*.rpm"].each { |rpm|
@@ -117,10 +123,18 @@ end
 # Update specified yum repository w/ latest project artifact for specified version
 def update_yum_repo(event, version, args = {})
    project    = event.project
-   repository = event.process_options
+   repository = nil
+   delete_rpms = false
+
+   unless event.process_options.nil?
+     poh = event.process_options.to_h
+     repository = poh["repo"]
+     delete_rpms = poh["delete_rpms"] == "true"
+     args.merge!(poh)
+   end
 
    # create the repository dir if it doesn't exist
-   Dir.mkdir repository unless File.directory? repository
+   FileUtils.mkdir_p repository unless File.directory? repository
 
    packages = [project.name + "-" + version]
 
@@ -151,10 +165,11 @@ def update_yum_repo(event, version, args = {})
 
        # copy project into repo/arch dir, creating it if it doesn't exist
        arch_dir = repository + "/#{arch}"
-       Dir.mkdir arch_dir unless File.directory? arch_dir
+       FileUtils.mkdir_p arch_dir unless File.directory? arch_dir
        unless File.exists?(arch_dir + "/#{pkg_file_name}") # TODO need to incorporate a md5sum comparison here
          updated_repo = true
-         File.write(arch_dir + "/#{pkg_file_name}", File.read_all(pkg_file.path))
+         FileUtils.cp pkg_file.path, arch_dir + "/#{pkg_file_name}"
+         FileUtils.rm_f pkg_file.path if delete_rpms # FIXME should do this deletion if delete_rpms is set regardless of whether or not we actually copy the rpms (?)
        end
      end
    }
