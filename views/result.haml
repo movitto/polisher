@@ -1,9 +1,0 @@
-- haml_tag(:result) do
-  - haml_tag(:success) do
-    = @result[:success]
-  - haml_tag(:message) do
-    = @result[:message]
-  - haml_tag(:errors) do
-    - @result[:errors].each do |err|
-      - haml_tag(:error) do
-        = err

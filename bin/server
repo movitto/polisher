@@ -1,4 +1,0 @@
-#!/bin/sh
-mkdir -p db/data/
-rake db:migrate
-thin start --debug -R config.ru 
